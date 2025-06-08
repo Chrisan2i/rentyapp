@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "870870389735",
+    "project_id": "renty-a5491",
+    "storage_bucket": "renty-a5491.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:870870389735:android:d316f03d7c7a4aa97ba342",
+        "android_client_info": {
+          "package_name": "com.company.renty"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBNz_8dsCV5UjTPwdoIZIbuhQaIGom3wWw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:870870389735:android:593f217a684dccf37ba342",
+        "android_client_info": {
+          "package_name": "com.example.renty"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBNz_8dsCV5UjTPwdoIZIbuhQaIGom3wWw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:870870389735:android:07aa91aee4e417037ba342",
+        "android_client_info": {
+          "package_name": "com.example.rentyapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBNz_8dsCV5UjTPwdoIZIbuhQaIGom3wWw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
