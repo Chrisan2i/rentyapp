@@ -14,15 +14,7 @@ class ProfileHeaderBar extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text(
-          'Profile',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w600,
-            color: AppColors.white,
-            letterSpacing: 0.3,
-          ),
-        ),
+        Text('Profile', style: AppTextStyles.headline.copyWith(letterSpacing: 0.3)),
         Stack(
           alignment: Alignment.topRight,
           children: [

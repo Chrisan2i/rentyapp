@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:rentyapp/core/theme/app_colors.dart';
+import 'package:rentyapp/core/theme/app_text_styles.dart';
 
 class SettingsTile extends StatelessWidget {
   final String title;
   final String? subtitle;
   final VoidCallback? onTap;
   final Widget? trailing;
-  final TextStyle? titleStyle; // 👈 Añadir esto
+  final TextStyle? titleStyle;
 
   const SettingsTile({
     super.key,
@@ -13,7 +15,7 @@ class SettingsTile extends StatelessWidget {
     this.subtitle,
     this.onTap,
     this.trailing,
-    this.titleStyle, // 👈 Añadir esto
+    this.titleStyle,
   });
 
   @override
@@ -24,7 +26,7 @@ class SettingsTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: const BoxDecoration(
           border: Border(
-            bottom: BorderSide(color: Color.fromARGB(26, 255, 255, 255), width: 1),
+            bottom: BorderSide(color: AppColors.white10, width: 1),
           ),
         ),
         child: Row(
@@ -36,23 +38,12 @@ class SettingsTile extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: titleStyle ??
-                        const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontFamily: 'Inter',
-                          fontWeight: FontWeight.w500,
-                        ),
+                    style: titleStyle ?? AppTextStyles.inputLabel,
                   ),
                   if (subtitle != null)
                     Text(
                       subtitle!,
-                      style: const TextStyle(
-                        color: Color(0xFF999999),
-                        fontSize: 12,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w400,
-                      ),
+                      style: AppTextStyles.statCompactSubtitle,
                     ),
                 ],
               ),

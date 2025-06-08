@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rentyapp/core/theme/app_colors.dart';
 
 class SettingsCard extends StatelessWidget {
   final Widget child;
@@ -10,8 +11,8 @@ class SettingsCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.white10),
         borderRadius: BorderRadius.circular(16),
       ),
       child: child,

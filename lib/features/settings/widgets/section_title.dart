@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:rentyapp/core/theme/app_colors.dart';
+import 'package:rentyapp/core/theme/app_text_styles.dart';
 
 class SectionTitle extends StatelessWidget {
   final String title;
@@ -11,10 +13,7 @@ class SectionTitle extends StatelessWidget {
       padding: const EdgeInsets.only(top: 32, bottom: 12, left: 24),
       child: Text(
         title.toUpperCase(),
-        style: const TextStyle(
-          color: Color(0xFF999999),
-          fontSize: 14,
-          fontFamily: 'Inter',
+        style: AppTextStyles.subtitle.copyWith(
           fontWeight: FontWeight.w500,
           letterSpacing: 0.35,
         ),

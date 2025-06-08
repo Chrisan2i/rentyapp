@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:rentyapp/core/theme/app_colors.dart';
+import 'package:rentyapp/core/theme/app_text_styles.dart';
 
 class LoginSocialButton extends StatelessWidget {
   final String label;
@@ -10,12 +12,12 @@ class LoginSocialButton extends StatelessWidget {
     return Container(
       height: 46,
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.white10),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Center(
-        child: Text(label, style: const TextStyle(color: Colors.white)),
+        child: Text(label, style: AppTextStyles.loginButton),
       ),
     );
   }

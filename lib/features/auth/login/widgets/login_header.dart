@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:rentyapp/core/theme/app_colors.dart';
+import 'package:rentyapp/core/theme/app_text_styles.dart';
 
 class LoginHeader extends StatelessWidget {
   const LoginHeader({super.key});
@@ -11,18 +13,18 @@ class LoginHeader extends StatelessWidget {
           Text(
             'Welcome Back',
             style: TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontFamily: 'Inter',
+              fontSize: 28,
               fontWeight: FontWeight.w700,
+              color: AppColors.white,
+              fontFamily: 'Inter',
             ),
           ),
           SizedBox(height: 8),
           Text(
             'Sign in to your Renty account',
             style: TextStyle(
-              color: Color(0xFF999999),
               fontSize: 14,
+              color: AppColors.textSecondary,
               fontFamily: 'Inter',
             ),
           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
+import 'package:rentyapp/core/theme/app_text_styles.dart';
 import 'package:rentyapp/features/auth/login/login.dart';
 import 'package:rentyapp/features/profile/edit/edit_profile_view.dart';
 import 'package:rentyapp/features/auth/services/auth_service.dart';
@@ -89,11 +90,11 @@ class SettingsView extends StatelessWidget {
                       final confirm = await showDialog<bool>(
                         context: context,
                         builder: (_) => AlertDialog(
-                          backgroundColor: const Color(0xFF1A1A1A),
-                          title: const Text('Confirm Deletion', style: TextStyle(color: Colors.white)),
+                          backgroundColor: AppColors.surface,
+                          title: const Text('Confirm Deletion', style: AppTextStyles.sectionTitle),
                           content: const Text(
                             'Are you sure you want to delete your account? This action cannot be undone.',
-                            style: TextStyle(color: Colors.white70),
+                            style: AppTextStyles.white70,
                           ),
                           actions: [
                             TextButton(
@@ -102,7 +103,7 @@ class SettingsView extends StatelessWidget {
                             ),
                             TextButton(
                               onPressed: () => Navigator.pop(context, true),
-                              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                              child: const Text('Delete', style: TextStyle(color: AppColors.danger)),
                             ),
                           ],
                         ),
@@ -122,12 +123,11 @@ class SettingsView extends StatelessWidget {
                       }
                     },
                     titleStyle: const TextStyle(
-                      color: Color(0xFFFF4757),
+                      color: AppColors.danger,
                       fontWeight: FontWeight.w500,
                       fontSize: 16,
                     ),
                   ),
-
                 ],
               ),
             ),
@@ -149,22 +149,20 @@ class SettingsView extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF4757),
+                  backgroundColor: AppColors.danger,
                   minimumSize: const Size.fromHeight(56),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 onPressed: () async {
-                    await AuthService().signOut();
-                    // Navegar al login (reemplaza según tu ruta)
-
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const LoginPage()),
-                          (route) => false,
-                    );
+                  await AuthService().signOut();
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const LoginPage()),
+                        (route) => false,
+                  );
                 },
-                child: const Text('Log Out', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: const Text('Log Out', style: AppTextStyles.button),
               ),
             ),
             const SizedBox(height: 32),
@@ -179,18 +177,17 @@ class SettingsView extends StatelessWidget {
       margin: const EdgeInsets.only(left: 4),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: selected ? const Color(0xFF0085FF) : Colors.transparent,
+        color: selected ? AppColors.primary : Colors.transparent,
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
         label,
         style: TextStyle(
           fontSize: 12,
-          color: selected ? Colors.white : const Color(0xFF999999),
+          color: selected ? AppColors.white : AppColors.textSecondary,
           fontWeight: FontWeight.w500,
         ),
       ),
     );
   }
 }
-

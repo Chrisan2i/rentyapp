@@ -14,6 +14,8 @@ class AppColors {
   static const Color hint = Color(0xFF666666);
   static const Color textFieldLabel = Color(0xFFCCCCCC);
   static const Color error = Colors.redAccent;
+  static const Color danger = Color(0xFFFF4757);
+
 
 
 

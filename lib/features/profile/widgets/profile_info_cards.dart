@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:rentyapp/core/theme/app_colors.dart';
+import 'package:rentyapp/core/theme/app_text_styles.dart';
 import 'package:rentyapp/features/auth/models/user_model.dart';
 
 class ProfileInfoCards extends StatelessWidget {
@@ -25,19 +27,19 @@ class ProfileInfoCards extends StatelessWidget {
       height: 100,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: AppColors.white10),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
+          Text(title, style: AppTextStyles.inputLabel),
           const SizedBox(height: 4),
           Text(
             subtitle,
             style: TextStyle(
-              color: highlight ? const Color(0xFF0085FF) : const Color(0xFF999999),
+              color: highlight ? AppColors.primary : AppColors.textSecondary,
               fontSize: 12,
             ),
           ),

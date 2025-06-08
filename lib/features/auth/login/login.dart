@@ -3,6 +3,8 @@ import 'package:rentyapp/features/auth/services/auth_service.dart';
 import 'package:rentyapp/features/auth/login/widgets/login_header.dart';
 import 'package:rentyapp/features/auth/login/widgets/login_input.dart';
 import 'package:rentyapp/features/auth/login/widgets/login_social_button.dart';
+import 'package:rentyapp/core/theme/app_colors.dart';
+import 'package:rentyapp/core/theme/app_text_styles.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -51,7 +53,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0B0B),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
@@ -60,10 +62,10 @@ class _LoginPageState extends State<LoginPage> {
             children: [
               const LoginHeader(),
               const SizedBox(height: 40),
-              const Text('Email Address', style: TextStyle(color: Color(0xFF999999), fontSize: 14)),
+              const Text('Email Address', style: AppTextStyles.inputHint),
               LoginInput(controller: emailController, hint: 'Enter your email'),
               const SizedBox(height: 24),
-              const Text('Password', style: TextStyle(color: Color(0xFF999999), fontSize: 14)),
+              const Text('Password', style: AppTextStyles.inputHint),
               LoginInput(controller: passwordController, hint: 'Enter your password', obscure: true),
               const SizedBox(height: 16),
               Row(
@@ -71,22 +73,22 @@ class _LoginPageState extends State<LoginPage> {
                   Checkbox(
                     value: rememberMe,
                     onChanged: (v) => setState(() => rememberMe = v ?? false),
-                    side: const BorderSide(color: Color(0xFF666666)),
+                    side: const BorderSide(color: AppColors.hint),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                     checkColor: Colors.black,
-                    activeColor: Colors.white,
+                    activeColor: AppColors.white,
                   ),
-                  const Text('Remember me', style: TextStyle(color: Color(0xFF999999))),
+                  const Text('Remember me', style: AppTextStyles.inputHint),
                   const Spacer(),
                   TextButton(
                     onPressed: () {},
-                    child: const Text('Forgot Password?', style: TextStyle(color: Color(0xFF0085FF))),
+                    child: const Text('Forgot Password?', style: AppTextStyles.bannerAction),
                   )
                 ],
               ),
               if (error != null) ...[
                 const SizedBox(height: 8),
-                Text(error!, style: const TextStyle(color: Colors.red)),
+                Text(error!, style: AppTextStyles.errorText),
               ],
               const SizedBox(height: 20),
               SizedBox(
@@ -95,16 +97,16 @@ class _LoginPageState extends State<LoginPage> {
                 child: ElevatedButton(
                   onPressed: loading ? null : _login,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0085FF),
+                    backgroundColor: AppColors.primary,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   child: loading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Sign In', style: TextStyle(fontWeight: FontWeight.w600)),
+                      ? const CircularProgressIndicator(color: AppColors.white)
+                      : const Text('Sign In', style: AppTextStyles.loginButton),
                 ),
               ),
               const SizedBox(height: 32),
-              const Center(child: Text('or continue with', style: TextStyle(color: Color(0xFF666666)))),
+              const Center(child: Text('or continue with', style: AppTextStyles.inputHint)),
               const SizedBox(height: 16),
               Row(
                 children: const [
@@ -118,14 +120,14 @@ class _LoginPageState extends State<LoginPage> {
                 width: double.infinity,
                 height: 50,
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  border: Border.all(color: AppColors.white10),
                   borderRadius: BorderRadius.circular(8),
-                  color: Colors.white.withOpacity(0.05),
+                  color: AppColors.white10,
                 ),
                 child: const Center(
                   child: Text(
                     'Your information is encrypted and protected',
-                    style: TextStyle(color: Color(0xFF999999), fontSize: 12),
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
                   ),
                 ),
               ),
@@ -133,10 +135,10 @@ class _LoginPageState extends State<LoginPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text("Don't have an account?", style: TextStyle(color: Color(0xFF666666))),
+                  const Text("Don't have an account?", style: AppTextStyles.inputHint),
                   TextButton(
                     onPressed: () => Navigator.pushNamed(context, '/register'),
-                    child: const Text('Sign Up', style: TextStyle(color: Color(0xFF0085FF))),
+                    child: const Text('Sign Up', style: AppTextStyles.bannerAction),
                   ),
                 ],
               )

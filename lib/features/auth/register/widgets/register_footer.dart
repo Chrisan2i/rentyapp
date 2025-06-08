@@ -38,10 +38,7 @@ class RegisterFooter extends StatelessWidget {
             const Text("Already have an account? ", style: AppTextStyles.subtitle),
             GestureDetector(
               onTap: () => Navigator.pushReplacementNamed(context, '/login'),
-              child: const Text(
-                'Log in',
-                style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
-              ),
+              child: const Text('Log in', style: AppTextStyles.bannerAction),
             ),
           ],
         ),
