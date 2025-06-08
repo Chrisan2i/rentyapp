@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
 import 'package:rentyapp/core/theme/app_text_styles.dart';
-import 'package:rentyapp/features/landing/controllers/controller.dart';
+import 'package:rentyapp/core/controllers/controller.dart';
 
 class ExploreButton extends StatelessWidget {
   const ExploreButton({super.key});

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
-import 'package:rentyapp/features/landing/controllers/controller.dart';
+import 'package:rentyapp/core/controllers/controller.dart';
 
 class HeaderLogoAndNotification extends StatelessWidget {
   const HeaderLogoAndNotification({super.key});

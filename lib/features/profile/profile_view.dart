@@ -10,7 +10,7 @@ import 'package:rentyapp/features/profile/widgets/profile_info_cards.dart';
 
 import 'package:rentyapp/features/profile/widgets/profile_details.dart' as details;
 
-import 'package:rentyapp/features/landing/controllers/controller.dart';
+import 'package:rentyapp/core/controllers/controller.dart';
 import 'package:rentyapp/features/profile/widgets/profile_header_bar.dart'; // 👈 añade esta línea
 
 class ProfileView extends StatelessWidget {

@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:rentyapp/core/theme/app_colors.dart';
-import 'package:rentyapp/features/landing/controllers/controller.dart';
+import 'package:rentyapp/core/controllers/controller.dart';
 import 'edit_profile_avatar.dart';
 
 class EditProfileForm extends StatefulWidget {

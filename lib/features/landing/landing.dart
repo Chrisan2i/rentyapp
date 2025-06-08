@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
 import 'package:rentyapp/core/theme/app_text_styles.dart';
-import 'package:rentyapp/features/landing/controllers/controller.dart';
+import 'package:rentyapp/core/controllers/controller.dart';
 import 'package:rentyapp/features/landing/widgets/bottom_cta_banner.dart';
 import 'package:rentyapp/core/widgets/custom_bottom_navbar.dart';
 import 'package:rentyapp/features/landing/widgets/header_logo_and_notification.dart';

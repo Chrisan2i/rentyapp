@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
 import 'package:rentyapp/core/theme/theme.dart';
-import 'package:rentyapp/features/landing/controllers/controller.dart';
+import 'package:rentyapp/core/controllers/controller.dart';
 import 'package:rentyapp/features/auth/login/login.dart';
 import 'package:rentyapp/core/widgets/main_navigation.dart';
 import 'package:rentyapp/features/auth/register/sign_up.dart';

@@ -4,6 +4,7 @@ import 'package:rentyapp/features/profile/profile_view.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
 import 'package:rentyapp/core/theme/app_text_styles.dart';
 import 'custom_bottom_navbar.dart';
+import 'package:rentyapp/features/add_product/view/add_product_view.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -44,7 +45,10 @@ class _MainNavigationState extends State<MainNavigation> {
         shape: const CircleBorder(),
         elevation: 8,
         onPressed: () {
-          // acción del botón central
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AddProductView()),
+          );
         },
         child: const Icon(Icons.add, size: 32),
       ),
