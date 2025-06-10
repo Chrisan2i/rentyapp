@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:rentyapp/features/auth/models/user_model.dart';
+import 'package:rentyapp/features/rentals/models/rental_model.dart'; // Asegúrate de tener el modelo de alquiler
 
 class Controller with ChangeNotifier {
   int notificationCount = 1;
   UserModel? currentUser;
   bool isLoading = true;
+  List<RentalModel> rentals = []; // Lista para los alquileres
 
   Controller() {
     loadCurrentUser();
+    loadRentals(); // Cargar los alquileres cuando se inicie el controlador
   }
 
   Future<void> loadCurrentUser() async {
@@ -39,6 +42,23 @@ class Controller with ChangeNotifier {
     isLoading = false;
     notifyListeners();
   }
+
+  Future<void> loadRentals() async {
+    try {
+      final rentalQuerySnapshot = await FirebaseFirestore.instance
+          .collection('rentals')
+          .get();
+
+      rentals = rentalQuerySnapshot.docs.map((doc) {
+        return RentalModel.fromJson(doc.data()); // Usamos el método fromJson para crear los objetos RentalModel
+      }).toList(); // Convertimos el resultado del map en una lista
+      notifyListeners();
+    } catch (e) {
+      print('❌ Error al cargar alquileres: $e');
+    }
+  }
+
+
   Future<void> updateUserProfile(Map<String, dynamic> newData) async {
     if (currentUser == null) return;
 
@@ -85,14 +105,13 @@ class Controller with ChangeNotifier {
       const SnackBar(content: Text('Start Exploring tapped!')),
     );
   }
+
   int selectedIndex = 0;
 
   void setSelectedIndex(int index) {
     selectedIndex = index;
     notifyListeners();
   }
-
-
 
   void clearNotifications() {
     notificationCount = 0;

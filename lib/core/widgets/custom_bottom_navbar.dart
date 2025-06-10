@@ -41,7 +41,7 @@ class CustomBottomNavBar extends StatelessWidget {
             const SizedBox(width: 40),
             NavBarItem(
               icon: Icons.inbox,
-              label: 'Requests',
+              label: 'Rentals',
               selected: selectedIndex == 2,
               onTap: () => onItemTapped(2),
             ),

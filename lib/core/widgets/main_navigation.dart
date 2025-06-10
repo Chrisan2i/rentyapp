@@ -5,6 +5,7 @@ import 'package:rentyapp/core/theme/app_colors.dart';
 import 'package:rentyapp/core/theme/app_text_styles.dart';
 import 'custom_bottom_navbar.dart';
 import 'package:rentyapp/features/add_product/view/add_product_view.dart';
+import 'package:rentyapp/features/rentals/my_rentals_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -19,7 +20,7 @@ class _MainNavigationState extends State<MainNavigation> {
   final List<Widget> _pages = const [
     LandingPage(),
     Center(child: Text('Search Page', style: AppTextStyles.headline)),
-    Center(child: Text('Requests Page', style: AppTextStyles.headline)),
+    RentalView(),
     ProfileView()
   ];
 
