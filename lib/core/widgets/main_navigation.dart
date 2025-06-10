@@ -6,6 +6,7 @@ import 'package:rentyapp/core/theme/app_text_styles.dart';
 import 'custom_bottom_navbar.dart';
 import 'package:rentyapp/features/add_product/view/add_product_view.dart';
 import 'package:rentyapp/features/rentals/my_rentals_screen.dart';
+import 'package:rentyapp/features/search/search_view.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -19,7 +20,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   final List<Widget> _pages = const [
     LandingPage(),
-    Center(child: Text('Search Page', style: AppTextStyles.headline)),
+    SearchScreen(),
     RentalView(),
     ProfileView()
   ];
@@ -35,7 +36,7 @@ class _MainNavigationState extends State<MainNavigation> {
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
-        children: _pages,
+        children: _pages
       ),
       bottomNavigationBar: CustomBottomNavBar(
         selectedIndex: _selectedIndex,

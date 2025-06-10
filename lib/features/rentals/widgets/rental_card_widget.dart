@@ -7,7 +7,6 @@ class RentalCardWidget extends StatelessWidget {
   final RentalModel rental;
   final String currentTab;
 
-  // Add Key? key and make the constructor const
   const RentalCardWidget({Key? key, required this.rental, required this.currentTab}) : super(key: key);
 
   @override
@@ -15,10 +14,10 @@ class RentalCardWidget extends StatelessWidget {
     String formattedDateInfo;
     Color statusButtonColor;
 
-    if (rental.status == 'Ongoing') {
+    if (rental.status == RentalStatus.ongoing) {
       formattedDateInfo = 'Due: ${DateFormat('MMM dd').format(rental.endDate)}';
       statusButtonColor = const Color(0xFF0085FF); // Blue for Ongoing
-    } else if (rental.status == 'Completed') {
+    } else if (rental.status == RentalStatus.completed) {
       formattedDateInfo = 'Completed: ${DateFormat('MMM dd').format(rental.endDate)}';
       statusButtonColor = const Color(0xFF333333); // Grey for Completed
     } else {
@@ -37,6 +36,7 @@ class RentalCardWidget extends StatelessWidget {
       color: const Color(0xFF1A1A1A),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      elevation: 6, // Añadir sombra para hacerlo más elegante
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -101,19 +101,24 @@ class RentalCardWidget extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: statusButtonColor,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(10), // Bordes más redondeados
                     ),
-                    minimumSize: Size(80, 30),
+                    minimumSize: const Size(100, 40), // Botón más grande
                     padding: EdgeInsets.zero,
+                    elevation: 4, // Sombra suave para el botón
                   ),
                   child: Text(
-                    rental.status,
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                    rental.status.toString().split('.').last,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
                 if (currentTab == 'renter') ...[
-                  if (rental.status == 'Ongoing')
+                  if (rental.status == RentalStatus.ongoing)
                     ElevatedButton(
                       onPressed: () {
                         // Acción para contactar al dueño
@@ -121,17 +126,18 @@ class RentalCardWidget extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF333333),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12), // Bordes más redondeados
                         ),
-                        minimumSize: Size(80, 30),
+                        minimumSize: const Size(100, 40),
                         padding: EdgeInsets.zero,
+                        elevation: 4, // Sombra suave
                       ),
                       child: const Text(
                         'Contact Owner',
-                        style: TextStyle(color: Colors.white, fontSize: 12),
+                        style: TextStyle(color: Colors.white, fontSize: 14),
                       ),
                     )
-                  else if (rental.status == 'Completed' && !rental.reviewedByRenter)
+                  else if (rental.status == RentalStatus.completed && !rental.reviewedByRenter)
                     ElevatedButton(
                       onPressed: () {
                         // Acción para dejar reseña como renter
@@ -139,18 +145,19 @@ class RentalCardWidget extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF333333),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        minimumSize: Size(80, 30),
+                        minimumSize: const Size(100, 40),
                         padding: EdgeInsets.zero,
+                        elevation: 4, // Sombra suave
                       ),
                       child: const Text(
                         'Leave Review',
-                        style: TextStyle(color: Colors.white, fontSize: 12),
+                        style: TextStyle(color: Colors.white, fontSize: 14),
                       ),
                     ),
                 ] else if (currentTab == 'owner') ...[
-                  if (rental.status == 'Ongoing')
+                  if (rental.status == RentalStatus.ongoing)
                     ElevatedButton(
                       onPressed: () {
                         // Acción para contactar al renter
@@ -158,17 +165,18 @@ class RentalCardWidget extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF333333),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        minimumSize: Size(80, 30),
+                        minimumSize: const Size(100, 40),
                         padding: EdgeInsets.zero,
+                        elevation: 4, // Sombra suave
                       ),
                       child: const Text(
                         'Contact Renter',
-                        style: TextStyle(color: Colors.white, fontSize: 12),
+                        style: TextStyle(color: Colors.white, fontSize: 14),
                       ),
                     )
-                  else if (rental.status == 'Completed' && !rental.reviewedByOwner)
+                  else if (rental.status == RentalStatus.completed && !rental.reviewedByOwner)
                     ElevatedButton(
                       onPressed: () {
                         // Acción para dejar reseña como owner
@@ -176,14 +184,15 @@ class RentalCardWidget extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF333333),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        minimumSize: Size(80, 30),
+                        minimumSize: const Size(100, 40),
                         padding: EdgeInsets.zero,
+                        elevation: 4, // Sombra suave
                       ),
                       child: const Text(
                         'Review Renter',
-                        style: TextStyle(color: Colors.white, fontSize: 12),
+                        style: TextStyle(color: Colors.white, fontSize: 14),
                       ),
                     ),
                 ],
@@ -195,14 +204,15 @@ class RentalCardWidget extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF333333),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    minimumSize: Size(80, 30),
+                    minimumSize: const Size(100, 40),
                     padding: EdgeInsets.zero,
+                    elevation: 4, // Sombra suave
                   ),
                   child: const Text(
                     'View Details',
-                    style: TextStyle(color: Colors.white, fontSize: 12),
+                    style: TextStyle(color: Colors.white, fontSize: 14),
                   ),
                 ),
               ],

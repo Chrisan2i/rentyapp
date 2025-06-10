@@ -1,3 +1,5 @@
+enum RentalStatus { ongoing, completed, cancelled }
+
 class RentalModel {
   final String rentalId;
   final String itemId;
@@ -6,7 +8,7 @@ class RentalModel {
   final DateTime startDate;
   final DateTime endDate;
   final double totalPrice;
-  final String status;
+  final RentalStatus status;
   final bool reviewedByRenter;
   final bool reviewedByOwner;
   final DateTime createdAt;
@@ -23,7 +25,12 @@ class RentalModel {
     required this.reviewedByRenter,
     required this.reviewedByOwner,
     required this.createdAt,
-  });
+  }) {
+    // Validación: La fecha de finalización no debe ser anterior a la fecha de inicio
+    if (startDate.isAfter(endDate)) {
+      throw ArgumentError('La fecha de fin no puede ser anterior a la fecha de inicio.');
+    }
+  }
 
   Map<String, dynamic> toJson() => {
     'rentalId': rentalId,
@@ -33,25 +40,30 @@ class RentalModel {
     'startDate': startDate.toIso8601String(),
     'endDate': endDate.toIso8601String(),
     'totalPrice': totalPrice,
-    'status': status,
+    'status': status.toString().split('.').last,  // Convierte el enum a String
     'reviewedByRenter': reviewedByRenter,
     'reviewedByOwner': reviewedByOwner,
     'createdAt': createdAt.toIso8601String(),
   };
 
-  factory RentalModel.fromJson(Map<String, dynamic> json) => RentalModel(
-    rentalId: json['rentalId'],
-    itemId: json['itemId'],
-    renterId: json['renterId'],
-    ownerId: json['ownerId'],
-    startDate: DateTime.parse(json['startDate']),
-    endDate: DateTime.parse(json['endDate']),
-    totalPrice: (json['totalPrice'] ?? 0).toDouble(),
-    status: json['status'],
-    reviewedByRenter: json['reviewedByRenter'],
-    reviewedByOwner: json['reviewedByOwner'],
-    createdAt: DateTime.parse(json['createdAt']),
-  );
+  factory RentalModel.fromJson(Map<String, dynamic> json) {
+    return RentalModel(
+      rentalId: json['rentalId'],
+      itemId: json['itemId'],
+      renterId: json['renterId'],
+      ownerId: json['ownerId'],
+      startDate: DateTime.parse(json['startDate']),
+      endDate: DateTime.parse(json['endDate']),
+      totalPrice: (json['totalPrice'] ?? 0).toDouble(),
+      status: RentalStatus.values.firstWhere(
+            (e) => e.toString() == 'RentalStatus.' + json['status'],
+        orElse: () => RentalStatus.ongoing,  // Valor predeterminado
+      ),
+      reviewedByRenter: json['reviewedByRenter'],
+      reviewedByOwner: json['reviewedByOwner'],
+      createdAt: DateTime.parse(json['createdAt']),
+    );
+  }
 
   RentalModel copyWith({
     String? rentalId,
@@ -61,7 +73,7 @@ class RentalModel {
     DateTime? startDate,
     DateTime? endDate,
     double? totalPrice,
-    String? status,
+    RentalStatus? status,
     bool? reviewedByRenter,
     bool? reviewedByOwner,
     DateTime? createdAt,
