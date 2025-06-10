@@ -1,3 +1,4 @@
+// search_view.dart
 import 'package:flutter/material.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
 import 'package:rentyapp/core/widgets/custom_bottom_navbar.dart';
@@ -13,16 +14,15 @@ class SearchScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        // Reduced horizontal padding to allow cards to be wider
+        padding: const EdgeInsets.symmetric(horizontal: 16), //
         child: Column(
           children: [
-            const SizedBox(height: 45),
+            const SizedBox(height: 40),
             const SearchHeader(), // Search Header (Title and filter bar)
-            const SizedBox(height: 2),
             const SearchFilter(), // Search Filter Section
-            const SizedBox(height: 10),
             const ProductListSection(), // Product List Section
-            const SizedBox(height: 10),
+            const SizedBox(height: 2),
           ],
         ),
       ),

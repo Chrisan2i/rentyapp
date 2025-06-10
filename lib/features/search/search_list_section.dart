@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:rentyapp/features/product/product_model.dart'; // <--- Ajusta la ruta si es diferente
-import 'package:rentyapp/features/search/product_card.dart';   // <--- Ajusta la ruta si es diferente
+import 'package:rentyapp/features/product/product_model.dart'; // <--- Adjust the path if different
+import 'package:rentyapp/features/search/product_card.dart';   // <--- Adjust the path if different
 
 class ProductListSection extends StatelessWidget {
   const ProductListSection({super.key});
@@ -9,61 +9,68 @@ class ProductListSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<ProductModel>>(
-      future: fetchProducts(), // Llama a la función para obtener productos de Firestore
+      future: fetchProducts(), // Calls the function to get products from Firestore
       builder: (context, snapshot) {
-        // Estado: Esperando los datos
+        // State: Waiting for data
         if (snapshot.connectionState == ConnectionState.waiting) {
-          print("⌛ Cargando productos...");
+          // print("⌛ Cargando productos..."); // Uncomment for debugging
           return const Center(child: CircularProgressIndicator());
         }
 
-        // Estado: Se produjo un error al cargar los datos
+        // State: An error occurred while loading data
         if (snapshot.hasError) {
-          print('❌ Error al cargar productos: ${snapshot.error}'); // Registra el error
+          // print('❌ Error al cargar productos: ${snapshot.error}'); // Uncomment for debugging
           return Center(
             child: Text(
-              'Error al cargar productos: ${snapshot.error}', // Muestra el error
+              'Error al cargar productos: ${snapshot.error}',
               style: const TextStyle(color: Colors.white),
               textAlign: TextAlign.center,
             ),
           );
         }
 
-        // Estado: Datos cargados, pero no se encontraron productos o la lista está vacía
+        // State: Data loaded, but no products found or the list is empty
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          print('ℹ️ No se encontraron productos en la base de datos.');
+          // print('ℹ️ No se encontraron productos en la base de datos.'); // Uncomment for debugging
           return const Center(
             child: Text(
-              'No products found', // El mensaje que viste en tu captura de pantalla
+              'No products found', // The message you saw in your screenshot
               style: TextStyle(color: Colors.white),
             ),
           );
         }
 
-        // Estado: Datos cargados exitosamente
+        // State: Data loaded successfully
         final products = snapshot.data!;
-        print('🎉 Productos cargados: ${products.length}'); // Confirma cuántos productos se cargaron
+        // print('🎉 Productos cargados: ${products.length}'); // Uncomment for debugging
 
         return ListView.builder(
           shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(), // Útil si ProductListSection está dentro de otro scrollable
+          // If ProductListSection is inside a SingleChildScrollView or Column that is already scrollable,
+          // this prevents a nested scroll error. If it's the main scroll widget, you can remove it.
+          physics: const NeverScrollableScrollPhysics(),
           itemCount: products.length,
           itemBuilder: (context, index) {
             final product = products[index];
-            // Aquí se aplica el padding alrededor de cada ProductCard.
-            // Esto es lo que puede contribuir al overflow si el ProductCard tiene altura fija.
             return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+              // The padding is already handled within ProductCard with its 'margin'
+              // This padding here is extra and might make the card smaller than expected
+              // or not align perfectly.
+              // To make the card look like the image, the internal 'margin' of the ProductCard
+              // is what defines the space between the cards.
+              // I recommend removing this external Padding if the ProductCard already has margin.
+              // Or leave it if you want *additional* space between the cards and the screen edges.
+              padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 0.0), // Adjusted to 0 horizontal if ProductCard has margin
               child: ProductCard(
                 product: product,
                 onViewProduct: () {
-                  // Navegar a la página de detalles del producto
-                  print('Navegando a detalles del producto: ${product.title}');
-                  // Aquí podrías usar Navigator.push para ir a una ProductDetailsScreen
+                  // Logic to navigate to the product details page
+                  // print('Navegando a detalles del producto: ${product.title}'); // Uncomment for debugging
+                  // Here you could use Navigator.push to go to a ProductDetailsScreen
                 },
                 onRentNow: () {
-                  // Manejar la funcionalidad de alquilar ahora
-                  print('Alquilando producto: ${product.title}');
+                  // Handle rent now functionality
+                  // print('Alquilando producto: ${product.title}'); // Uncomment for debugging
                 },
               ),
             );
@@ -73,26 +80,31 @@ class ProductListSection extends StatelessWidget {
     );
   }
 
-  // Función para obtener productos de Firestore
+  // Function to get products from Firestore
   Future<List<ProductModel>> fetchProducts() async {
     try {
       final QuerySnapshot snapshot = await FirebaseFirestore.instance
-          .collection('products') // <--- Asegúrate de que 'products' sea el nombre exacto de tu colección
+          .collection('products') // <--- VERIFY THIS CAREFULLY IN YOUR FIREBASE CONSOLE!
           .get();
 
-      // Debugging: Verifica cuántos documentos se obtuvieron de Firestore
-      print("🔍 Documentos de Firestore obtenidos: ${snapshot.docs.length}");
+      // print("🔍 Documentos de Firestore obtenidos: ${snapshot.docs.length}"); // Uncomment for debugging
 
       if (snapshot.docs.isEmpty) {
-        print('⚠️ No se encontraron documentos en la colección "products" de Firestore.');
-        return []; // Retorna una lista vacía si no hay documentos
+        // print('⚠️ No se encontraron documentos en la colección "products" de Firestore.'); // Uncomment for debugging
+        return []; // Returns an empty list if no documents are found
       }
 
-      // Mapea los documentos a ProductModel
-      return snapshot.docs.map((doc) => ProductModel.fromFirestore(doc)).toList();
+      return snapshot.docs.map((doc) {
+        try {
+          return ProductModel.fromFirestore(doc);
+        } catch (e) {
+          // print('❌ Error al parsear documento ${doc.id}: $e'); // Uncomment for debugging
+          return ProductModel.empty(doc.id); // Returns an empty model if there's an error in a specific document
+        }
+      }).toList();
     } catch (e) {
-      print('❌ Error al obtener productos de Firestore: $e'); // Captura cualquier error durante la obtención
-      return []; // Retorna una lista vacía si hay un error
+      // print('❌ Error general al obtener productos de Firestore: $e'); // Uncomment for debugging
+      return []; // Returns an empty list if there's an error
     }
   }
 }

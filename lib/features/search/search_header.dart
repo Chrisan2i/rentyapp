@@ -9,10 +9,10 @@ class SearchHeader extends StatelessWidget {
       width: double.infinity,
       height: 73,
       decoration: BoxDecoration(
-        color: Color(0xFF0B0B0B),
+        color: const Color(0xFF0B0B0B),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Center(
+      child: const Center(
         child: Text(
           'Search',
           style: TextStyle(
