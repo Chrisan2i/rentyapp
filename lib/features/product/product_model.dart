@@ -33,6 +33,24 @@ class ProductModel {
     required this.location,
   });
 
+  // Constructor para crear un ProductModel con valores por defecto o "vacío"
+  // Esto es útil cuando un documento de Firestore no existe o no se puede parsear.
+  ProductModel.empty(String id) :
+        productId = id,
+        ownerId = '',
+        title = 'Producto no disponible', // Título de fallback
+        description = '',
+        category = '',
+        rentalPrices = {},
+        images = [],
+        isAvailable = false,
+        rating = 0.0,
+        totalReviews = 0,
+        views = 0,
+        createdAt = DateTime.now(),
+        updatedAt = DateTime.now(),
+        location = {};
+
   Map<String, dynamic> toJson() => {
     'productId': productId,
     'ownerId': ownerId,
@@ -51,20 +69,20 @@ class ProductModel {
   };
 
   factory ProductModel.fromJson(Map<String, dynamic> json) => ProductModel(
-    productId: json['productId'],
-    ownerId: json['ownerId'],
-    title: json['title'],
-    description: json['description'],
-    category: json['category'],
-    rentalPrices: Map<String, double>.from(json['rentalPrices'] ?? {}),
-    images: List<String>.from(json['images']),
-    isAvailable: json['isAvailable'],
-    rating: (json['rating'] ?? 0).toDouble(),
-    totalReviews: json['totalReviews'],
-    views: json['views'] ?? 0,
-    createdAt: DateTime.parse(json['createdAt']),
-    updatedAt: DateTime.parse(json['updatedAt']),
-    location: Map<String, dynamic>.from(json['location']),
+    productId: json['productId'] as String? ?? '',
+    ownerId: json['ownerId'] as String? ?? '',
+    title: json['title'] as String? ?? 'Sin título',
+    description: json['description'] as String? ?? '',
+    category: json['category'] as String? ?? 'General',
+    rentalPrices: (json['rentalPrices'] as Map<String, dynamic>?)?.map((key, value) => MapEntry(key, _getDoubleFromDynamic(value))) ?? {},
+    images: List<String>.from(json['images'] as List<dynamic>? ?? []),
+    isAvailable: json['isAvailable'] as bool? ?? true,
+    rating: _getDoubleFromDynamic(json['rating']),
+    totalReviews: json['totalReviews'] as int? ?? 0,
+    views: json['views'] as int? ?? 0,
+    createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+    updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ?? DateTime.now(),
+    location: Map<String, dynamic>.from(json['location'] as Map<String, dynamic>? ?? {}),
   );
 
   ProductModel copyWith({
@@ -102,30 +120,13 @@ class ProductModel {
   }
 
   factory ProductModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>?; // Make data nullable
-    if (data == null) {
-      // Handle the case where document data is null (shouldn't happen often if exists is true)
-      print("Warning: Document data is null for doc ID: ${doc.id}");
-      return ProductModel(
-        productId: doc.id, // Use doc ID as productId fallback
-        ownerId: '',
-        title: 'Producto no disponible',
-        description: '',
-        category: '',
-        rentalPrices: {},
-        images: [],
-        isAvailable: false,
-        rating: 0.0,
-        totalReviews: 0,
-        views: 0,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        location: {},
-      );
+    if (!doc.exists || doc.data() == null) {
+      // Usar el constructor .empty que hemos definido
+      return ProductModel.empty(doc.id);
     }
 
-    // A veces, createdAt y updatedAt pueden venir como Timestamp si no se guardaron como String
-    // Tu código asume String. Si en Firestore son Timestamps, necesitas adaptarlo.
+    final data = doc.data() as Map<String, dynamic>;
+
     DateTime? parsedCreatedAt;
     if (data['createdAt'] is Timestamp) {
       parsedCreatedAt = (data['createdAt'] as Timestamp).toDate();
@@ -140,33 +141,43 @@ class ProductModel {
       parsedUpdatedAt = DateTime.tryParse(data['updatedAt']);
     }
 
+    Map<String, double> parsedRentalPrices = {};
+    if (data['rentalPrices'] is Map) {
+      (data['rentalPrices'] as Map).forEach((key, value) {
+        if (value is num) {
+          parsedRentalPrices[key.toString()] = value.toDouble();
+        }
+      });
+    }
+
+    Map<String, dynamic> parsedLocation = {};
+    if (data['location'] is Map) {
+      parsedLocation = Map<String, dynamic>.from(data['location']);
+    }
+
     return ProductModel(
-      productId: data['productId'] ?? doc.id, // Usa doc.id como fallback si productId no está en el doc
-      ownerId: data['ownerId'] ?? '',
-      title: data['title'] ?? 'Sin título',
-      description: data['description'] ?? '',
-      category: data['category'] ?? 'General',
-      // Asegura que rentalPrices y location sean mapas, incluso si vienen nulos
-      rentalPrices: Map<String, double>.from(data['rentalPrices'] ?? {}),
-      images: List<String>.from(data['images'] ?? []), // Asegura que images sea una lista de strings
-      isAvailable: data['isAvailable'] ?? true,
+      productId: data['productId'] as String? ?? doc.id,
+      ownerId: data['ownerId'] as String? ?? '',
+      title: data['title'] as String? ?? 'Producto Desconocido',
+      description: data['description'] as String? ?? '',
+      category: data['category'] as String? ?? 'Otros',
+      rentalPrices: parsedRentalPrices,
+      images: List<String>.from(data['images'] as List<dynamic>? ?? []),
+      isAvailable: data['isAvailable'] as bool? ?? true,
       rating: _getDoubleFromDynamic(data['rating']),
-      totalReviews: data['totalReviews'] ?? 0,
-      views: data['views'] ?? 0,
+      totalReviews: data['totalReviews'] as int? ?? 0,
+      views: data['views'] as int? ?? 0,
       createdAt: parsedCreatedAt ?? DateTime.now(),
       updatedAt: parsedUpdatedAt ?? DateTime.now(),
-      location: Map<String, dynamic>.from(data['location'] ?? {}),
+      location: parsedLocation,
     );
   }
 
-  // Función auxiliar para manejar 'int' o 'double' para la calificación
   static double _getDoubleFromDynamic(dynamic value) {
-    if (value is int) {
+    if (value is num) {
       return value.toDouble();
-    } else if (value is double) {
-      return value;
     } else {
-      return 0.0; // Valor predeterminado si no es int ni double
+      return 0.0;
     }
   }
 }
