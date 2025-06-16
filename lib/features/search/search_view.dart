@@ -1,28 +1,106 @@
+// lib/features/search/search_view.dart
+
 import 'package:flutter/material.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
-import 'package:rentyapp/core/widgets/custom_bottom_navbar.dart';
-import 'package:rentyapp/features/search/search_list_section.dart';
-import 'search_header.dart';
-import 'search_filter.dart';
+import 'search_list_section.dart';
+import 'search_and_filter_header.dart';
+import 'filter_options_sheet.dart';
 
-class SearchScreen extends StatelessWidget {
+class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
+
+  @override
+  State<SearchScreen> createState() => _SearchScreenState();
+}
+
+class _SearchScreenState extends State<SearchScreen> {
+  String _searchQuery = '';
+  Map<String, dynamic> _activeFilters = {};
+
+  void _onSearchChanged(String query) {
+    setState(() {
+      _searchQuery = query;
+    });
+  }
+
+  void _showFilterSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1F1F1F),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return FilterOptionsSheet(
+          initialFilters: _activeFilters,
+          onApplyFilters: (newFilters) {
+            setState(() {
+              _activeFilters = newFilters;
+            });
+            Navigator.pop(context);
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          children: [
-            const SizedBox(height: 45),
-            const SearchHeader(), // Search Header (Title and filter bar)
-            const SizedBox(height: 2),
-            const SearchFilter(), // Search Filter Section
-            const SizedBox(height: 10),
-            const ProductListSection(), // Product List Section
-            const SizedBox(height: 10),
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            // --- INICIO DE LA SECCIÓN DEL TÍTULO AÑADIDA ---
+            SliverToBoxAdapter(
+              child: Padding(
+                // Ajusta el padding según tu diseño. Un poco de espacio vertical arriba es bueno.
+                padding: const EdgeInsets.fromLTRB(20.0, 24.0, 20.0, 16.0),
+                child: Text(
+                  'Search',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 32, // Tamaño grande para que sea un título prominente
+                    fontWeight: FontWeight.bold, // Fuente en negrita para destacar
+                    fontFamily: 'YourAppFont', // Opcional: Reemplaza con tu fuente personalizada
+                  ),
+                ),
+              ),
+            ),
+            // --- FIN DE LA SECCIÓN DEL TÍTULO AÑADIDA ---
+
+            // El header de búsqueda y filtro
+            SliverToBoxAdapter(
+              child: Padding(
+                // Se reduce el padding superior de este widget porque el título ya lo proporciona
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: SearchAndFilterHeader(
+                  onSearchChanged: _onSearchChanged,
+                  onFilterTapped: _showFilterSheet,
+                ),
+              ),
+            ),
+
+            // Espacio entre la búsqueda y la lista de productos
+            const SliverToBoxAdapter(
+              child: SizedBox(height: 24.0),
+            ),
+
+            // La lista de productos
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: ProductListSection(
+                  searchQuery: _searchQuery,
+                  filters: _activeFilters,
+                ),
+              ),
+            ),
+            // Espacio al final del scroll para que no quede pegado al fondo
+            const SliverToBoxAdapter(
+              child: SizedBox(height: 24.0),
+            ),
           ],
         ),
       ),
