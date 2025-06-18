@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:rentyapp/main.dart'; // o cambia por la ruta correcta si usas otra pantalla
 
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
+// -------------------------------------------
 
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
@@ -30,9 +32,14 @@ class _SplashScreenState extends State<SplashScreen>
     _controller.forward();
 
     Future.delayed(const Duration(seconds: 2), () {
-      Navigator.pushReplacementNamed(context, '/');
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/');
+      }
     });
+    // -------------------------------------------
   }
+
+  // ... el resto de tu código (dispose y build) se queda exactamente igual ...
 
   @override
   void dispose() {
@@ -71,4 +78,3 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 }
-
