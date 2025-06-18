@@ -1,6 +1,3 @@
-// main.dart
-
-import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -15,6 +12,7 @@ import 'package:rentyapp/features/auth/login/login.dart';
 import 'package:rentyapp/core/widgets/main_navigation.dart';
 import 'package:rentyapp/features/auth/register/sign_up.dart';
 import 'package:rentyapp/features/rental_request/rental_requests_view.dart';
+import 'core/widgets/splash_screen.dart';
 
 
 void main() async {
@@ -51,15 +49,13 @@ class MyApp extends StatelessWidget {
       title: 'Renty',
       debugShowCheckedModeBanner: false,
       theme: appTheme,
-      initialRoute: '/',
+      initialRoute: '/splash',
       routes: {
         '/': (context) => const AuthWrapper(),
         '/login': (context) => const LoginPage(),
         '/landing': (context) => const MainNavigation(),
         '/register': (context) => const RegisterPage(),
-
-        // --- RUTA AÑADIDA ---
-        // Esta es la nueva ruta que permitirá la navegación desde el perfil.
+        '/splash': (context) => const SplashScreen(),
         '/rent-requests': (context) => const RentalRequestsView(),
         // --------------------
 
