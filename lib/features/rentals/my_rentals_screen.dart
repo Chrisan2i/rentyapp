@@ -1,4 +1,3 @@
-// lib/features/rentals/rental_view.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -6,7 +5,7 @@ import 'package:rentyapp/core/theme/app_colors.dart';
 import 'package:rentyapp/core/theme/app_text_styles.dart';
 
 import 'package:rentyapp/features/rentals/widgets/rental_card_widget.dart';
-import 'package:rentyapp/features/rentals/widgets/rental_status_selector.dart';
+import 'widgets/rental_status_selector.dart';
 import 'package:rentyapp/features/rentals/widgets/rental_tab_selector.dart';
 
 import 'package:rentyapp/core/controllers/controller.dart';
@@ -20,14 +19,14 @@ class RentalView extends StatefulWidget {
 }
 
 class _RentalViewState extends State<RentalView> {
-  String _currentTab = 'renter'; // Estado local para la pestaña seleccionada
-  bool _isOngoingSelected = true; // Estado local para el filtro de estado
+  String _currentTab = 'renter';
+  bool _isOngoingSelected = true;
 
   @override
   Widget build(BuildContext context) {
     final controller = Provider.of<Controller>(context);
     final user = controller.currentUser;
-    List<RentalModel> rentals = controller.rentals;
+    List<RentalModel> allRentals = controller.rentals;
 
     if (controller.isLoading) {
       return const Scaffold(
@@ -45,62 +44,58 @@ class _RentalViewState extends State<RentalView> {
       );
     }
 
-    rentals = rentals.where((rental) {
-      bool matchesTab = false;
-      if (_currentTab == 'renter') {
-        matchesTab = rental.renterId == user.userId;
-      } else {
-        matchesTab = rental.ownerId == user.userId;
-      }
 
-      if (!matchesTab) {
-        return false;
-      }
+    final filteredRentals = allRentals.where((rental) {
+      final bool isUserRenter = rental.renterId == user.userId;
+      final bool isUserOwner = rental.ownerId == user.userId;
 
-      if (_isOngoingSelected) {
-        return rental.status == 'Ongoing';
-      } else {
-        return rental.status == 'Completed';
-      }
+
+      if (_currentTab == 'renter' && !isUserRenter) return false;
+      if (_currentTab == 'owner' && !isUserOwner) return false;
+
+      // Filtrar por estado (Ongoing / Past)
+      final isOngoingStatus = rental.status == RentalStatus.ongoing || rental.status == RentalStatus.late;
+      final isPastStatus = rental.status == RentalStatus.completed || rental.status == RentalStatus.cancelled;
+
+      if (_isOngoingSelected && !isOngoingStatus) return false;
+      if (!_isOngoingSelected && !isPastStatus) return false;
+
+      return true;
     }).toList();
 
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar( // Added AppBar here
-        backgroundColor: AppColors.background, // Set background color to match the scaffold
+      appBar: AppBar(
+        backgroundColor: AppColors.background,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white), // Back arrow icon
-          onPressed: () {
-            // Implement navigation back functionality here
-            Navigator.of(context).pop();
-          },
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+          onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(
           'My Rentals',
           style: TextStyle(
             color: Colors.white,
-            fontWeight: FontWeight.bold, // Based on the screenshot
-            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
           ),
         ),
-        centerTitle: true, // Center the title as seen in the screenshot
+        centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.filter_list, color: Colors.white), // Filter icon
+            // El icono en la imagen se parece más a un funnel o filtro.
+            icon: const Icon(Icons.filter_list, color: Colors.white, size: 24),
             onPressed: () {
-              // Implement filter functionality here
+              // TODO: Implement filter functionality
             },
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 0),
         child: Column(
           children: [
-            // The SizedBox(height: 60) directly under the AppBar is no longer needed if AppBar handles top padding
-            // But if you want space below the AppBar, you can keep a smaller SizedBox
-            // const SizedBox(height: 60), // Removed as AppBar handles top space
+            const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: RentalTabSelector(
@@ -112,7 +107,7 @@ class _RentalViewState extends State<RentalView> {
                 },
               ),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: RentalStatusSelector(
@@ -124,18 +119,19 @@ class _RentalViewState extends State<RentalView> {
                 },
               ),
             ),
-            const SizedBox(height: 30),
-            ListView.builder(
+            const SizedBox(height: 20),
+            ListView.separated(
               shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
-              itemCount: rentals.length,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: filteredRentals.length,
               itemBuilder: (context, index) {
-                final rental = rentals[index];
+                final rental = filteredRentals[index];
                 return RentalCardWidget(rental: rental, currentTab: _currentTab);
               },
+              separatorBuilder: (context, index) => const SizedBox(height: 16),
             ),
-            const SizedBox(height: 24),
-            const SizedBox(height: 60),
+            const SizedBox(height: 40),
           ],
         ),
       ),

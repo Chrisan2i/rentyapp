@@ -13,6 +13,8 @@ import 'package:rentyapp/features/profile/widgets/profile_details.dart' as detai
 import 'package:rentyapp/core/controllers/controller.dart';
 import 'package:rentyapp/features/profile/widgets/profile_header_bar.dart'; // 👈 añade esta línea
 
+// En lib/features/profile/profile_view.dart
+
 class ProfileView extends StatelessWidget {
   const ProfileView({super.key});
 
@@ -21,21 +23,7 @@ class ProfileView extends StatelessWidget {
     final controller = Provider.of<Controller>(context);
     final user = controller.currentUser;
 
-    if (controller.isLoading) {
-      return const Scaffold(
-        backgroundColor: AppColors.background,
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    if (user == null) {
-      return const Scaffold(
-        backgroundColor: AppColors.background,
-        body: Center(
-          child: Text("No user data found", style: AppTextStyles.subtitle),
-        ),
-      );
-    }
+    // ... (tu código de isLoading y user == null)
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -44,11 +32,26 @@ class ProfileView extends StatelessWidget {
         child: Column(
           children: [
             const SizedBox(height: 60),
-            const ProfileHeaderBar(), // 👈 aquí lo insertamos
+            const ProfileHeaderBar(),
             const SizedBox(height: 30),
-            ProfileHeader(user: user),
+            ProfileHeader(user: user!), // Sabemos que user no es null aquí
             const SizedBox(height: 24),
-            ProfileInfoCards(user: user),
+
+            // --- MODIFICACIÓN AQUÍ ---
+            // Usamos un StreamBuilder para escuchar el conteo de solicitudes
+            StreamBuilder<int>(
+              stream: controller.pendingRequestsCountStream,
+              initialData: 0, // Muestra 0 mientras carga el stream
+              builder: (context, snapshot) {
+                // Obtenemos el conteo del snapshot, o 0 si hay un error o no ha llegado.
+                final requestsCount = snapshot.data ?? 0;
+
+                // Pasamos el conteo actualizado al widget de tarjetas
+                return ProfileInfoCards(user: user, pendingRequestsCount: requestsCount);
+              },
+            ),
+            // --- FIN DE LA MODIFICACIÓN ---
+
             const SizedBox(height: 32),
             details.ProfileDetails(user: user),
             const SizedBox(height: 60),

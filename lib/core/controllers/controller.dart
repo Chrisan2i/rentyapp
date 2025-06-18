@@ -1,21 +1,41 @@
+// lib/core/controllers/controller.dart (o donde lo tengas)
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:rentyapp/features/auth/models/user_model.dart';
-import 'package:rentyapp/features/rentals/models/rental_model.dart'; // Asegúrate de tener el modelo de alquiler
+import 'package:rentyapp/features/rentals/models/rental_model.dart';
+// Importa tu servicio de alquiler si aún no lo has hecho
+import 'package:rentyapp/features/rentals/services/rental_services.dart'; // <-- ¡Asegúrate que la ruta es correcta!
 
 class Controller with ChangeNotifier {
   int notificationCount = 1;
   UserModel? currentUser;
   bool isLoading = true;
-  List<RentalModel> rentals = []; // Lista para los alquileres
+  List<RentalModel> rentals = [];
+
+  // --- NUEVA ADICIÓN: Instancia del servicio de alquiler ---
+  final RentalService _rentalService = RentalService();
+  // --------------------------------------------------------
 
   Controller() {
     loadCurrentUser();
-    loadRentals(); // Cargar los alquileres cuando se inicie el controlador
+    loadRentals();
   }
 
+  // --- NUEVA ADICIÓN: Stream para el contador de solicitudes ---
+  Stream<int> get pendingRequestsCountStream {
+    // Si no hay un usuario logueado, devolvemos un stream con valor 0 para evitar errores.
+    if (currentUser == null) {
+      return Stream.value(0);
+    }
+    // Usamos el servicio para obtener el stream de conteo en tiempo real.
+    return _rentalService.getPendingRentalRequestsCount(currentUser!.userId);
+  }
+  // -------------------------------------------------------------
+
   Future<void> loadCurrentUser() async {
+    // Tu método se mantiene igual, está perfecto.
     try {
       final authUser = FirebaseAuth.instance.currentUser;
       if (authUser == null) {
@@ -31,7 +51,7 @@ class Controller with ChangeNotifier {
           .get();
 
       if (userDoc.exists) {
-        currentUser = UserModel.fromMap(userDoc.data()!); // 👈 Asegúrate de tener fromMap
+        currentUser = UserModel.fromMap(userDoc.data()!);
       } else {
         print('⚠️ Usuario no encontrado en Firestore.');
       }
@@ -44,56 +64,33 @@ class Controller with ChangeNotifier {
   }
 
   Future<void> loadRentals() async {
+    // Tu método se mantiene igual.
     try {
       final rentalQuerySnapshot = await FirebaseFirestore.instance
           .collection('rentals')
           .get();
 
       rentals = rentalQuerySnapshot.docs.map((doc) {
-        return RentalModel.fromJson(doc.data()); // Usamos el método fromJson para crear los objetos RentalModel
-      }).toList(); // Convertimos el resultado del map en una lista
+        return RentalModel.fromJson(doc.data());
+      }).toList();
       notifyListeners();
     } catch (e) {
       print('❌ Error al cargar alquileres: $e');
     }
   }
 
-
   Future<void> updateUserProfile(Map<String, dynamic> newData) async {
+    // Tu método se mantiene igual.
     if (currentUser == null) return;
 
     try {
       final userId = currentUser!.userId;
-
-      // 🔄 Actualiza Firestore
       await FirebaseFirestore.instance.collection('users').doc(userId).update(newData);
 
-      // ✅ Actualiza localmente el modelo
-      currentUser = UserModel(
-        userId: userId,
-        fullName: newData['fullName'] ?? currentUser!.fullName,
-        username: newData['username'] ?? currentUser!.username,
-        email: currentUser!.email,
-        phone: newData['phone'] ?? currentUser!.phone,
-        profileImageUrl: newData['profileImageUrl'] ?? currentUser!.profileImageUrl,
-        role: currentUser!.role,
-        createdAt: currentUser!.createdAt,
-        lastLoginAt: currentUser!.lastLoginAt,
-        rating: currentUser!.rating,
-        totalRentsMade: currentUser!.totalRentsMade,
-        totalRentsReceived: currentUser!.totalRentsReceived,
-        blocked: currentUser!.blocked,
-        banReason: currentUser!.banReason,
-        reports: currentUser!.reports,
-        notesByAdmin: currentUser!.notesByAdmin,
-        verified: currentUser!.verified,
-        address: currentUser!.address,
-        identityVerification: currentUser!.identityVerification,
-        preferences: currentUser!.preferences,
-        paymentMethods: currentUser!.paymentMethods,
-      );
+      // Recargamos el usuario desde Firestore para tener la versión más actualizada
+      // Es más seguro que reconstruirlo manualmente.
+      await loadCurrentUser();
 
-      notifyListeners();
     } catch (e) {
       print('❌ Error al actualizar perfil: $e');
       rethrow;

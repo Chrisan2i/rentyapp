@@ -1,5 +1,6 @@
 // lib/features/search/widgets/search_and_filter_header.dart
 
+import 'dart:async'; // Necesario para usar el Timer para el debounce
 import 'package:flutter/material.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
 
@@ -19,20 +20,33 @@ class SearchAndFilterHeader extends StatefulWidget {
 
 class _SearchAndFilterHeaderState extends State<SearchAndFilterHeader> {
   final _controller = TextEditingController();
+  Timer? _debounce; // El timer para gestionar el debounce
 
   @override
   void initState() {
     super.initState();
-    // Escucha los cambios en el TextField para mostrar/ocultar el botón de limpiar.
     _controller.addListener(() {
-      setState(() {}); // Reconstruye para actualizar el icono de sufijo
+      // Reconstruye el widget para mostrar/ocultar el botón de limpiar
+      if (mounted) {
+        setState(() {});
+      }
     });
   }
 
   @override
   void dispose() {
+    _debounce?.cancel(); // Cancela el timer al destruir el widget para evitar memory leaks
     _controller.dispose();
     super.dispose();
+  }
+
+  /// Función que implementa el debounce.
+  /// Espera a que el usuario deje de escribir por 500ms antes de llamar a onSearchChanged.
+  void _onSearchChangedWithDebounce(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      widget.onSearchChanged(query);
+    });
   }
 
   @override
@@ -43,7 +57,8 @@ class _SearchAndFilterHeaderState extends State<SearchAndFilterHeader> {
         Expanded(
           child: TextField(
             controller: _controller,
-            onChanged: widget.onSearchChanged, // Llama al callback en cada cambio
+            // AHORA: Llama a la función con debounce en lugar de directamente
+            onChanged: _onSearchChangedWithDebounce,
             style: const TextStyle(color: Colors.white, fontSize: 14),
             decoration: InputDecoration(
               contentPadding: const EdgeInsets.symmetric(vertical: 14.0),
@@ -53,21 +68,23 @@ class _SearchAndFilterHeaderState extends State<SearchAndFilterHeader> {
                 Icons.search,
                 color: Colors.white.withOpacity(0.7),
               ),
-              // Muestra un botón para limpiar el texto solo si hay texto escrito
+              // El botón para limpiar el texto aparece condicionalmente
               suffixIcon: _controller.text.isNotEmpty
                   ? IconButton(
                 icon: Icon(Icons.clear, color: Colors.white.withOpacity(0.7)),
                 onPressed: () {
+                  // Limpiar el texto no necesita debounce, debe ser inmediato
+                  if (_debounce?.isActive ?? false) _debounce!.cancel();
                   _controller.clear();
                   widget.onSearchChanged(''); // Notifica que la búsqueda se limpió
                 },
               )
                   : null,
               filled: true,
-              fillColor: AppColors.surface, // Un color de superficie sutil
+              fillColor: AppColors.surface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide.none, // Sin borde visible por defecto
+                borderSide: BorderSide.none,
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -75,7 +92,7 @@ class _SearchAndFilterHeaderState extends State<SearchAndFilterHeader> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+                borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
               ),
             ),
           ),
@@ -92,9 +109,9 @@ class _SearchAndFilterHeaderState extends State<SearchAndFilterHeader> {
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: Colors.white.withOpacity(0.1)),
             ),
-            child: Icon(
+            child: const Icon(
               Icons.filter_list_rounded,
-              color: AppColors.primary, // Usa tu color primario para destacar
+              color: AppColors.primary,
               size: 24,
             ),
           ),

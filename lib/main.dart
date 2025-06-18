@@ -1,3 +1,5 @@
+// main.dart
+
 import 'dart:async';
 import 'dart:ui';
 
@@ -12,6 +14,7 @@ import 'package:rentyapp/core/controllers/controller.dart';
 import 'package:rentyapp/features/auth/login/login.dart';
 import 'package:rentyapp/core/widgets/main_navigation.dart';
 import 'package:rentyapp/features/auth/register/sign_up.dart';
+import 'package:rentyapp/features/rental_request/rental_requests_view.dart';
 
 
 void main() async {
@@ -20,7 +23,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // ⚠️ Captura errores no controlados
+  // Captura de errores (esto está muy bien)
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
     print('❌ FlutterError: ${details.exception}');
@@ -47,7 +50,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Renty',
       debugShowCheckedModeBanner: false,
-      theme: appTheme, // Asegúrate de que esté bien definido en /core/theme/theme.dart
+      theme: appTheme,
       initialRoute: '/',
       routes: {
         '/': (context) => const AuthWrapper(),
@@ -55,6 +58,15 @@ class MyApp extends StatelessWidget {
         '/landing': (context) => const MainNavigation(),
         '/register': (context) => const RegisterPage(),
 
+        // --- RUTA AÑADIDA ---
+        // Esta es la nueva ruta que permitirá la navegación desde el perfil.
+        '/rent-requests': (context) => const RentalRequestsView(),
+        // --------------------
+
+        // Aquí podrías añadir las otras rutas que necesites en el futuro:
+        // '/my-listings': (context) => const MyListingsView(),
+        // '/favorites': (context) => const FavoritesView(),
+        // '/verification': (context) => const VerificationView(),
       },
     );
   }

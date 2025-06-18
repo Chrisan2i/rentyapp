@@ -1,5 +1,3 @@
-// lib/features/search/search_view.dart
-
 import 'package:flutter/material.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
 import 'search_list_section.dart';
@@ -52,7 +50,6 @@ class _SearchScreenState extends State<SearchScreen> {
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            // --- INICIO DE LA SECCIÓN DEL TÍTULO AÑADIDA ---
             SliverToBoxAdapter(
               child: Padding(
                 // Ajusta el padding según tu diseño. Un poco de espacio vertical arriba es bueno.
@@ -68,9 +65,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
               ),
             ),
-            // --- FIN DE LA SECCIÓN DEL TÍTULO AÑADIDA ---
 
-            // El header de búsqueda y filtro
             SliverToBoxAdapter(
               child: Padding(
                 // Se reduce el padding superior de este widget porque el título ya lo proporciona
@@ -82,12 +77,12 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
             ),
 
-            // Espacio entre la búsqueda y la lista de productos
+
             const SliverToBoxAdapter(
               child: SizedBox(height: 24.0),
             ),
 
-            // La lista de productos
+
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -97,7 +92,6 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
               ),
             ),
-            // Espacio al final del scroll para que no quede pegado al fondo
             const SliverToBoxAdapter(
               child: SizedBox(height: 24.0),
             ),

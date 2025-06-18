@@ -1,48 +1,39 @@
-// lib/features/rentals/rental_status_selector.dart
 import 'package:flutter/material.dart';
 
 class RentalStatusSelector extends StatelessWidget {
-  final bool isOngoingSelected; // Para manejar qué estado está seleccionado
-  final ValueChanged<bool> onStatusSelected; // Callback para notificar el cambio de estado
+  final bool isOngoingSelected;
+  final ValueChanged<bool> onStatusSelected;
 
-  RentalStatusSelector({required this.isOngoingSelected, required this.onStatusSelected});
+  const RentalStatusSelector({Key? key, required this.isOngoingSelected, required this.onStatusSelected}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: 10),
-      padding: EdgeInsets.all(4), // Padding around the buttons
-      decoration: BoxDecoration(
-        color: Color(0xFF333333), // Dark grey background for the selector
-        borderRadius: BorderRadius.circular(10), // Rounded corners for the container
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _buildStatusButton('Ongoing', true, isOngoingSelected),
-          _buildStatusButton('Past', false, !isOngoingSelected),
-        ],
-      ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        _buildStatusButton('Ongoing', true),
+        const SizedBox(width: 12),
+        _buildStatusButton('Past', false),
+      ],
     );
   }
 
-  Widget _buildStatusButton(String label, bool representsOngoing, bool isSelected) {
-    return Expanded( // Use Expanded to make buttons take equal space
-      child: GestureDetector(
-        onTap: () => onStatusSelected(representsOngoing), // Llama al callback al seleccionar
+  Widget _buildStatusButton(String label, bool representsOngoing) {
+    final isSelected = isOngoingSelected == representsOngoing;
+    return Material(
+      color: isSelected ? const Color(0xFF0A84FF) : const Color(0xFF2C2C2E),
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: () => onStatusSelected(representsOngoing),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.blue : Colors.transparent, // Blue when selected, transparent otherwise
-            borderRadius: BorderRadius.circular(8), // Slightly rounded corners for the button itself
-          ),
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
           child: Text(
             label,
-            textAlign: TextAlign.center, // Center the text
             style: TextStyle(
-              color: Colors.white, // Text color is always white
+              color: isSelected ? Colors.white : Colors.grey.shade400,
               fontSize: 14,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),

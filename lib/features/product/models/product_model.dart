@@ -15,6 +15,7 @@ class ProductModel {
   final DateTime createdAt;
   final DateTime updatedAt;
   final Map<String, dynamic> location;
+  final Map<String, dynamic> rentalDetails;
 
   ProductModel({
     required this.productId,
@@ -31,14 +32,15 @@ class ProductModel {
     required this.createdAt,
     required this.updatedAt,
     required this.location,
+    // --- AÑADIDO ---
+    // Se añade al constructor.
+    required this.rentalDetails,
   });
 
-  // Constructor para crear un ProductModel con valores por defecto o "vacío"
-  // Esto es útil cuando un documento de Firestore no existe o no se puede parsear.
   ProductModel.empty(String id) :
         productId = id,
         ownerId = '',
-        title = 'Producto no disponible', // Título de fallback
+        title = 'Producto no disponible',
         description = '',
         category = '',
         rentalPrices = {},
@@ -49,7 +51,8 @@ class ProductModel {
         views = 0,
         createdAt = DateTime.now(),
         updatedAt = DateTime.now(),
-        location = {};
+        location = {},
+        rentalDetails = {};
 
   Map<String, dynamic> toJson() => {
     'productId': productId,
@@ -66,6 +69,7 @@ class ProductModel {
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
     'location': location,
+    'rentalDetails': rentalDetails,
   };
 
   factory ProductModel.fromJson(Map<String, dynamic> json) => ProductModel(
@@ -83,6 +87,9 @@ class ProductModel {
     createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
     updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ?? DateTime.now(),
     location: Map<String, dynamic>.from(json['location'] as Map<String, dynamic>? ?? {}),
+    // --- AÑADIDO ---
+    // Se parsea desde JSON, con un valor por defecto seguro.
+    rentalDetails: Map<String, dynamic>.from(json['rentalDetails'] as Map<String, dynamic>? ?? {}),
   );
 
   ProductModel copyWith({
@@ -100,6 +107,7 @@ class ProductModel {
     DateTime? createdAt,
     DateTime? updatedAt,
     Map<String, dynamic>? location,
+    Map<String, dynamic>? rentalDetails,
   }) {
     return ProductModel(
       productId: productId ?? this.productId,
@@ -116,12 +124,14 @@ class ProductModel {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       location: location ?? this.location,
+      // --- AÑADIDO ---
+      // Se asigna en la copia.
+      rentalDetails: rentalDetails ?? this.rentalDetails,
     );
   }
 
   factory ProductModel.fromFirestore(DocumentSnapshot doc) {
     if (!doc.exists || doc.data() == null) {
-      // Usar el constructor .empty que hemos definido
       return ProductModel.empty(doc.id);
     }
 
@@ -170,6 +180,8 @@ class ProductModel {
       createdAt: parsedCreatedAt ?? DateTime.now(),
       updatedAt: parsedUpdatedAt ?? DateTime.now(),
       location: parsedLocation,
+
+      rentalDetails: Map<String, dynamic>.from(data['rentalDetails'] as Map? ?? {}),
     );
   }
 
