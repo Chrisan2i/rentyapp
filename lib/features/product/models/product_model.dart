@@ -1,7 +1,7 @@
 // lib/models/product_model.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// Modelo anidado para precios
+// ----- PricingDetails no cambia, lo omito por brevedad -----
 class PricingDetails {
   final double perDay;
   final double? perWeek;
@@ -26,6 +26,7 @@ class PricingDetails {
   }
 }
 
+
 class ProductModel {
   final String productId;
   final String title;
@@ -33,26 +34,16 @@ class ProductModel {
   final String category;
   final List<String> images;
   final bool isAvailable;
-
-  // Precios y Reglas de Alquiler
   final PricingDetails rentalPrices;
   final double depositAmount;
   final int minimumRentalDays;
   final int maximumRentalDays;
-
-  // Disponibilidad y Ubicación
   final List<Map<String, DateTime>> rentedPeriods;
   final Map<String, dynamic> location;
-
-  // Información del Dueño (Denormalizada)
   final String ownerId;
   final Map<String, dynamic> ownerInfo;
-
-  // Reputación y Estadísticas
   final double rating;
   final int totalReviews;
-
-  // Metadatos
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -77,6 +68,23 @@ class ProductModel {
     required this.updatedAt,
   });
 
+  // --- ¡AQUÍ ESTÁ LA MAGIA! ---
+  // Función de ayuda para convertir de forma segura cualquier formato de fecha.
+  static DateTime _parseTimestamp(dynamic dateValue) {
+    if (dateValue == null) {
+      return DateTime.now(); // O manejarlo como un error, dependiendo de tu lógica.
+    }
+    if (dateValue is Timestamp) {
+      return dateValue.toDate();
+    }
+    if (dateValue is String) {
+      // Intenta parsear la String. Si falla, devuelve ahora.
+      return DateTime.tryParse(dateValue) ?? DateTime.now();
+    }
+    // Si es otro tipo, devuelve ahora como fallback.
+    return DateTime.now();
+  }
+
   factory ProductModel.fromMap(Map<String, dynamic> map, String id) {
     return ProductModel(
       productId: id,
@@ -89,23 +97,31 @@ class ProductModel {
       depositAmount: (map['depositAmount'] as num?)?.toDouble() ?? 0.0,
       minimumRentalDays: map['minimumRentalDays'] as int? ?? 1,
       maximumRentalDays: map['maximumRentalDays'] as int? ?? 90,
+
+      // Usamos nuestra función de ayuda aquí
       rentedPeriods: (map['rentedPeriods'] as List<dynamic>? ?? []).map((p) {
+        final periodMap = p as Map<String, dynamic>;
         return {
-          'start': (p['start'] as Timestamp).toDate(),
-          'end': (p['end'] as Timestamp).toDate(),
+          'start': _parseTimestamp(periodMap['start']),
+          'end': _parseTimestamp(periodMap['end']),
         };
       }).toList(),
+
       location: Map<String, dynamic>.from(map['location'] ?? {}),
       ownerId: map['ownerId'] ?? '',
       ownerInfo: Map<String, dynamic>.from(map['ownerInfo'] ?? {}),
       rating: (map['rating'] as num?)?.toDouble() ?? 0.0,
       totalReviews: map['totalReviews'] as int? ?? 0,
-      createdAt: (map['createdAt'] as Timestamp).toDate(),
-      updatedAt: (map['updatedAt'] as Timestamp).toDate(),
+
+      // Y también la usamos aquí
+      createdAt: _parseTimestamp(map['createdAt']),
+      updatedAt: _parseTimestamp(map['updatedAt']),
     );
   }
 
   Map<String, dynamic> toMap() {
+    // Tu método toMap está perfecto. Lo dejamos como está.
+    // El SDK se encarga de convertir DateTime a Timestamp.
     return {
       'title': title,
       'description': description,
@@ -116,14 +132,18 @@ class ProductModel {
       'depositAmount': depositAmount,
       'minimumRentalDays': minimumRentalDays,
       'maximumRentalDays': maximumRentalDays,
-      'rentedPeriods': rentedPeriods,
+      // Convertimos DateTime a Timestamp para Firestore
+      'rentedPeriods': rentedPeriods.map((p) => {
+        'start': Timestamp.fromDate(p['start']!),
+        'end': Timestamp.fromDate(p['end']!),
+      }).toList(),
       'location': location,
       'ownerId': ownerId,
       'ownerInfo': ownerInfo,
       'rating': rating,
       'totalReviews': totalReviews,
-      'createdAt': createdAt,
-      'updatedAt': updatedAt,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': Timestamp.fromDate(updatedAt),
     };
   }
 }
