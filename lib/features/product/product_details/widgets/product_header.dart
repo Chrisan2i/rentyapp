@@ -5,13 +5,13 @@ import 'package:rentyapp/features/product/models/product_model.dart';
 /// Muestra el encabezado del producto con título, precio y rating.
 class ProductHeader extends StatelessWidget {
   final String title;
-  final double pricePerDay;
+  final PricingDetails prices;
   final double rating;
 
   const ProductHeader({
     Key? key,
     required this.title,
-    required this.pricePerDay,
+    required this.prices,
     required this.rating,
   }) : super(key: key);
 
@@ -33,7 +33,7 @@ class ProductHeader extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '\$${pricePerDay.toStringAsFixed(0)} /day',
+              '\$${prices.displayPrice.toStringAsFixed(0)} / ${prices.displayUnit}',
               style: const TextStyle(
                 color: AppColors.primary,
                 fontSize: 22,

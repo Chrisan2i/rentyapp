@@ -44,21 +44,26 @@ class LocationStep extends StatelessWidget {
 
           Row(
             children: [
-              ElevatedButton.icon(
-                onPressed: onUseCurrentLocation,
-                icon: const Icon(Icons.my_location),
-                label: const Text("Use Current Location"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0085FF),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: onUseCurrentLocation,
+                  icon: const Icon(Icons.my_location),
+                  label: const Text("Use Current Location"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0085FF),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
               if (latitude != null && longitude != null)
-                Text(
-                  '📍 ($latitude, $longitude)',
-                  style: const TextStyle(color: Colors.white70),
-                )
+                Flexible(
+                  child: Text(
+                    '📍 ($latitude, $longitude)',
+                    style: const TextStyle(color: Colors.white70),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 24),

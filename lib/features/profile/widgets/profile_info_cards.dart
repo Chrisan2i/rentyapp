@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
 import 'package:rentyapp/core/theme/app_text_styles.dart';
 import 'package:rentyapp/features/auth/models/user_model.dart';
+import 'package:rentyapp/features/rental_request/rental_requests_view.dart';
 
 class ProfileInfoCards extends StatelessWidget {
   final UserModel user;
@@ -36,7 +37,10 @@ class ProfileInfoCards extends StatelessWidget {
           context: context,
           title: 'Rentals Requests',
           subtitle: '$pendingRequestsCount requests',
-          onTap: () { /* TODO: Navegar a Rent Requests */ },
+          onTap: () { Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const RentalRequestsView()),
+          ); },
         ),
         _buildInfoCard(
           context: context,

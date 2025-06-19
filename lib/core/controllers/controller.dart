@@ -1,14 +1,15 @@
-// ARCHIVO: lib/core/controllers/controller.dart
+// ARCHIVO: lib/core/controllers/app_controller.dart
 
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart' as auth; // Importante para el tipo 'User'
-import 'package:rentyapp/features/auth/models/user_model.dart';
+import 'package:firebase_auth/firebase_auth.dart' as auth;
+import 'package:rentyapp/features/auth/models/user_model.dart'; // Ajusta las rutas si es necesario
 import 'package:rentyapp/features/rentals/models/rental_model.dart';
 import 'package:rentyapp/features/auth/services/auth_service.dart';
 import 'package:rentyapp/features/rentals/services/rental_services.dart';
 import 'package:rentyapp/models/notification_service.dart';
 
+// El enum ViewState no cambia, está perfecto.
 enum ViewState { idle, loading, error }
 
 /// Controlador principal de la aplicación. Orquesta los servicios y gestiona el estado global.
@@ -25,7 +26,15 @@ class AppController with ChangeNotifier {
   List<RentalModel> _rentals = [];
   List<RentalModel> get rentals => _rentals;
 
-  ViewState _userState = ViewState.idle;
+  // --- MEJORA: Añadimos estado para los mensajes de error ---
+  String _userErrorMessage = '';
+  String get userErrorMessage => _userErrorMessage;
+
+  String _rentalsErrorMessage = '';
+  String get rentalsErrorMessage => _rentalsErrorMessage;
+
+  // Estados de carga (ViewState)
+  ViewState _userState = ViewState.loading; // Empieza en loading para el arranque inicial
   ViewState get userState => _userState;
 
   ViewState _rentalsState = ViewState.idle;
@@ -41,10 +50,10 @@ class AppController with ChangeNotifier {
   })  : _authService = authService,
         _rentalService = rentalService,
         _notificationService = notificationService {
-    _initialize();
+    _listenToAuthChanges();
   }
 
-  void _initialize() {
+  void _listenToAuthChanges() {
     _authSubscription?.cancel();
     _authSubscription = _authService.authStateChanges.listen(_onAuthStateChanged);
   }
@@ -53,7 +62,7 @@ class AppController with ChangeNotifier {
   Future<void> _onAuthStateChanged(auth.User? firebaseUser) async {
     if (firebaseUser != null) {
       // Si el usuario de Firebase existe, usamos su UID para cargar nuestros datos.
-      await loadCurrentUser(firebaseUser.uid);
+      await fetchCurrentUser(uid: firebaseUser.uid);
     } else {
       // Si es nulo, el usuario ha cerrado sesión.
       _clearUserState();
@@ -68,50 +77,72 @@ class AppController with ChangeNotifier {
     notifyListeners();
   }
 
-  // --- STREAMS ---
+  // --- STREAMS (No necesitan cambios, están bien) ---
   Stream<int> get pendingRequestsCountStream =>
       _currentUser != null ? _rentalService.getPendingRentalRequestsCount(_currentUser!.userId) : Stream.value(0);
 
   Stream<int> get unreadNotificationsCountStream =>
       _currentUser != null ? _notificationService.getUnreadNotificationsCount(_currentUser!.userId) : Stream.value(0);
 
-  // --- MÉTODOS ---
-  Future<void> loadCurrentUser(String uid) async {
-    _setLoadingState(user: ViewState.loading);
+  // --- MÉTODOS PÚBLICOS PARA LA UI ---
+
+  /// --- MEJORA: Método público para reintentar la carga ---
+  /// Este es el método que llamará el botón "Try Again" desde la ProfileView.
+  Future<void> fetchCurrentUser({String? uid}) async {
+    final userId = uid ?? _currentUser?.userId;
+    if (userId == null) {
+      _userState = ViewState.error;
+      _userErrorMessage = "User ID not available.";
+      notifyListeners();
+      return;
+    }
+
+    _userState = ViewState.loading;
+    notifyListeners();
+
     try {
-      _currentUser = await _authService.getUserData(uid);
+      _currentUser = await _authService.getUserData(userId);
       if (_currentUser != null) {
-        await loadUserRentals();
-        _setLoadingState(user: ViewState.idle);
+        _userState = ViewState.idle;
+        await fetchUserRentals(); // Carga los alquileres después de cargar el usuario
       } else {
-        _setLoadingState(user: ViewState.error);
+        throw Exception("User data not found in Firestore.");
       }
     } catch (e) {
       debugPrint('❌ Error al cargar datos del usuario: $e');
-      _setLoadingState(user: ViewState.error);
+      _userState = ViewState.error;
+      _userErrorMessage = "Could not load profile. Please check your connection.";
+    } finally {
+      notifyListeners();
     }
   }
 
-  Future<void> loadUserRentals() async {
+  Future<void> fetchUserRentals() async {
     if (_currentUser == null) return;
-    _setLoadingState(rentals: ViewState.loading);
+
+    _rentalsState = ViewState.loading;
+    notifyListeners();
+
     try {
       _rentals = await _rentalService.getRentalsForUser(_currentUser!.userId);
-      _setLoadingState(rentals: ViewState.idle);
+      _rentalsState = ViewState.idle;
     } catch (e) {
       debugPrint('❌ Error al cargar alquileres del usuario: $e');
-      _setLoadingState(rentals: ViewState.error);
+      _rentalsState = ViewState.error;
+      _rentalsErrorMessage = "Could not load rentals.";
+    } finally {
+      notifyListeners();
     }
   }
 
   Future<void> updateUserProfile(Map<String, dynamic> newData) async {
-    if (_currentUser == null) throw Exception("Usuario no autenticado.");
+    if (_currentUser == null) throw Exception("User not authenticated.");
     try {
       await _authService.updateUserProfile(_currentUser!.userId, newData);
-      await loadCurrentUser(_currentUser!.userId);
+      await fetchCurrentUser(); // Recarga los datos del usuario para reflejar los cambios
     } catch (e) {
       debugPrint('❌ Error al actualizar perfil: $e');
-      rethrow;
+      rethrow; // Lanza el error para que la UI de edición de perfil pueda manejarlo
     }
   }
 
@@ -124,22 +155,7 @@ class AppController with ChangeNotifier {
     }
   }
 
-  void _setLoadingState({ViewState? user, ViewState? rentals}) {
-    bool needsNotify = false;
-    if (user != null && _userState != user) {
-      _userState = user;
-      needsNotify = true;
-    }
-    if (rentals != null && _rentalsState != rentals) {
-      _rentalsState = rentals;
-      needsNotify = true;
-    }
-    if (needsNotify) {
-      notifyListeners();
-    }
-  }
-
-  // --- UI ---
+  // --- NAVEGACIÓN DE LA UI (No necesita cambios) ---
   int _selectedIndex = 0;
   int get selectedIndex => _selectedIndex;
 

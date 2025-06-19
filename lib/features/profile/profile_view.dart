@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
-import 'package:rentyapp/core/controllers/controller.dart';
+import 'package:rentyapp/core/controllers/controller.dart'; // Asegúrate que esta ruta es correcta
 import 'package:rentyapp/features/profile/widgets/profile_header.dart';
 import 'package:rentyapp/features/profile/widgets/profile_info_cards.dart';
 import 'package:rentyapp/features/profile/widgets/profile_details.dart' as details;
@@ -14,51 +14,60 @@ class ProfileView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // <<<--- CORRECCIÓN: Se usa AppController en lugar de Controller ---<<<
-    final controller = Provider.of<AppController>(context);
+    // Usamos 'watch' para que la UI se reconstruya cuando cambie el estado del controlador.
+    final controller = context.watch<AppController>();
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      // <<<--- MEJORA: Manejo de estados de carga para una UI robusta ---<<<
       body: _buildBody(context, controller),
     );
   }
 
   Widget _buildBody(BuildContext context, AppController controller) {
-    // Usamos el estado de carga del controlador para decidir qué mostrar
     switch (controller.userState) {
       case ViewState.loading:
+      // Muestra un esqueleto o un spinner mientras carga el perfil inicial.
         return const Center(child: CircularProgressIndicator(color: AppColors.primary));
       case ViewState.error:
-        return const Center(child: Text("Error al cargar el perfil.", style: TextStyle(color: Colors.red)));
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 48),
+              const SizedBox(height: 16),
+              const Text("Error loading profile.", style: TextStyle(color: Colors.red, fontSize: 16)),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => controller.fetchCurrentUser(), // Asume que tienes un método para reintentar
+                child: const Text("Try Again"),
+              )
+            ],
+          ),
+        );
       case ViewState.idle:
         final user = controller.currentUser;
-        // Aunque esté 'idle', es buena práctica verificar si el usuario es nulo.
         if (user == null) {
-          return const Center(child: Text("No se encontró información del usuario."));
+          // Este caso podría ocurrir si el usuario cierra sesión.
+          return const Center(child: Text("User not found. Please log in again."));
         }
+
         // Si todo está bien, mostramos el contenido del perfil.
         return SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             children: [
               const SizedBox(height: 60),
-              const ProfileHeaderBar(), // Este widget ahora se actualiza solo
+              const ProfileHeaderBar(),
               const SizedBox(height: 30),
-              ProfileHeader(user: user),
+              ProfileHeader(user: user), // Este widget ahora es robusto
               const SizedBox(height: 24),
-
-              // Usamos un StreamBuilder para escuchar el conteo de solicitudes
               StreamBuilder<int>(
                 stream: controller.pendingRequestsCountStream,
                 initialData: 0,
                 builder: (context, snapshot) {
-                  final requestsCount = snapshot.data ?? 0;
-                  // Pasamos el conteo actualizado y el usuario a las tarjetas
-                  return ProfileInfoCards(user: user, pendingRequestsCount: requestsCount);
+                  return ProfileInfoCards(user: user, pendingRequestsCount: snapshot.data ?? 0);
                 },
               ),
-
               const SizedBox(height: 32),
               details.ProfileDetails(user: user),
               const SizedBox(height: 60),

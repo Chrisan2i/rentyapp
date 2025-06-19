@@ -1,20 +1,23 @@
-// lib/features/product/widgets/product_card.dart
+// lib/features/search/product_card.dart (o donde lo tengas)
 
 import 'package:flutter/material.dart';
 import 'package:rentyapp/features/product/models/product_model.dart';
-import 'package:rentyapp/core/theme/app_colors.dart'; // Asumiendo que esta ruta es correcta
+import 'package:rentyapp/core/theme/app_colors.dart';
 
 class ProductCard extends StatelessWidget {
   final ProductModel product;
   final VoidCallback onViewProduct;
   final VoidCallback onRentNow;
 
+  // --- CORRECCIÓN 1: Super parameters ---
+  // Hacemos el constructor más limpio y moderno.
   const ProductCard({
-    Key? key,
+    super.key, // Así se usa un super parameter
     required this.product,
     required this.onViewProduct,
     required this.onRentNow,
-  }) : super(key: key);
+  });
+
 
   Widget _buildImagePlaceholder() {
     return Container(
@@ -32,6 +35,10 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Usamos las propiedades inteligentes de PricingDetails que ya creamos.
+    final String displayPrice = product.rentalPrices.displayPrice.toStringAsFixed(0);
+    final String displayUnit = product.rentalPrices.displayUnit;
+
     return InkWell(
       onTap: onViewProduct,
       borderRadius: BorderRadius.circular(16),
@@ -53,35 +60,40 @@ class ProductCard extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: product.images.isNotEmpty
-                      ? Image.network(product.images[0], fit: BoxFit.cover, width: double.infinity, errorBuilder: (c, o, s) => _buildImagePlaceholder())
+                      ? Image.network(product.images.first, fit: BoxFit.cover, width: double.infinity, errorBuilder: (c, o, s) => _buildImagePlaceholder())
                       : _buildImagePlaceholder(),
                 ),
               ),
               const SizedBox(height: 8),
-              // El `flex` aquí no es necesario si no hay otro Expanded en la Column
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     Text(product.title, style: const TextStyle(color: AppColors.white, fontSize: 14, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 4),
                     Text(
                       '${product.location['city'] ?? 'City'}, ${product.location['neighborhood'] ?? 'Area'}',
-                      style: TextStyle(color: AppColors.white.withOpacity(0.6), fontSize: 10), maxLines: 1, overflow: TextOverflow.ellipsis,
+                      // --- CORRECCIÓN 2: Uso de withAlpha ---
+                      // Multiplicamos la opacidad (0.6) por 255. 0.6 * 255 = 153
+                      style: TextStyle(color: AppColors.white.withAlpha(153), fontSize: 10),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
-                    // --- CORREGIDO AQUÍ ---
-                    // Se accede a la propiedad 'perDay' del objeto 'rentalPrices', no a una clave de mapa.
+
+                    // --- CORRECCIÓN 3: Uso de las propiedades inteligentes ---
+                    // Esto es seguro porque displayPrice y displayUnit siempre devuelven un valor.
                     Text(
-                      '\$${product.rentalPrices.perDay.toStringAsFixed(0)} /day',
-                      style: const TextStyle(color: AppColors.primary, fontSize: 16, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis,
+                      '\$$displayPrice / $displayUnit',
+                      style: const TextStyle(color: AppColors.primary, fontSize: 16, fontWeight: FontWeight.w700),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
-              const Spacer(), // Usa un Spacer para empujar el botón hacia abajo
+              const Spacer(),
               Padding(
                 padding: const EdgeInsets.only(top: 6.0),
                 child: Row(

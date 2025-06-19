@@ -2,26 +2,46 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 // ----- PricingDetails no cambia, lo omito por brevedad -----
+// lib/models/pricing_details.dart (o como lo llames)
+
 class PricingDetails {
-  final double perDay;
+  final double? perDay;
   final double? perWeek;
   final double? perMonth;
 
-  PricingDetails({required this.perDay, this.perWeek, this.perMonth});
+  PricingDetails({this.perDay, this.perWeek, this.perMonth});
 
+  // --- ¡ESTE ES EL MÉTODO MÁS IMPORTANTE! ---
+  // "Traduce" el mapa de Firestore a un objeto Dart.
   factory PricingDetails.fromMap(Map<String, dynamic> map) {
     return PricingDetails(
-      perDay: (map['perDay'] as num?)?.toDouble() ?? 0.0,
-      perWeek: (map['perWeek'] as num?)?.toDouble(),
-      perMonth: (map['perMonth'] as num?)?.toDouble(),
+      // Busca la clave 'day' en el mapa que viene de Firestore.
+      perDay: (map['day'] as num?)?.toDouble(),
+      // Busca la clave 'week'.
+      perWeek: (map['week'] as num?)?.toDouble(),
+      // Busca la clave 'month'.
+      perMonth: (map['month'] as num?)?.toDouble(),
     );
   }
 
+  // Lógica inteligente para mostrar el precio y la unidad correctos.
+  double get displayPrice {
+    return perDay ?? perWeek ?? perMonth ?? 0.0;
+  }
+
+  String get displayUnit {
+    if (perDay != null) return 'day';
+    if (perWeek != null) return 'week';
+    if (perMonth != null) return 'month';
+    return 'day'; // Valor por defecto
+  }
+
+  // Este método es para escribir de vuelta a Firestore.
   Map<String, dynamic> toMap() {
     return {
-      'perDay': perDay,
-      if (perWeek != null) 'perWeek': perWeek,
-      if (perMonth != null) 'perMonth': perMonth,
+      if (perDay != null) 'day': perDay,
+      if (perWeek != null) 'week': perWeek,
+      if (perMonth != null) 'month': perMonth,
     };
   }
 }
@@ -41,7 +61,6 @@ class ProductModel {
   final List<Map<String, DateTime>> rentedPeriods;
   final Map<String, dynamic> location;
   final String ownerId;
-  final Map<String, dynamic> ownerInfo;
   final double rating;
   final int totalReviews;
   final DateTime createdAt;
@@ -61,7 +80,6 @@ class ProductModel {
     this.rentedPeriods = const [],
     required this.location,
     required this.ownerId,
-    required this.ownerInfo,
     this.rating = 0.0,
     this.totalReviews = 0,
     required this.createdAt,
@@ -109,7 +127,6 @@ class ProductModel {
 
       location: Map<String, dynamic>.from(map['location'] ?? {}),
       ownerId: map['ownerId'] ?? '',
-      ownerInfo: Map<String, dynamic>.from(map['ownerInfo'] ?? {}),
       rating: (map['rating'] as num?)?.toDouble() ?? 0.0,
       totalReviews: map['totalReviews'] as int? ?? 0,
 
@@ -139,7 +156,6 @@ class ProductModel {
       }).toList(),
       'location': location,
       'ownerId': ownerId,
-      'ownerInfo': ownerInfo,
       'rating': rating,
       'totalReviews': totalReviews,
       'createdAt': Timestamp.fromDate(createdAt),

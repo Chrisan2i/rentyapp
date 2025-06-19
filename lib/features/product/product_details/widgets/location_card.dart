@@ -1,3 +1,5 @@
+// lib/features/product/widgets/location_card.dart
+
 import 'package:flutter/material.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
 import 'details_text_button.dart';
@@ -7,10 +9,16 @@ import 'section_card.dart';
 class LocationCard extends StatelessWidget {
   final Map<String, dynamic> location;
 
-  const LocationCard({Key? key, required this.location}) : super(key: key);
+  // --- MEJORA 1: Super parameter ---
+  // Hacemos el constructor más limpio y moderno.
+  const LocationCard({super.key, required this.location});
 
   @override
   Widget build(BuildContext context) {
+    // Para mayor seguridad, extraemos los valores con un fallback.
+    final String city = location['city'] as String? ?? 'Ciudad Desconocida';
+    final String neighborhood = location['neighborhood'] as String? ?? 'Área Desconocida';
+
     return SectionCard(
       title: 'Location',
       child: Column(
@@ -21,7 +29,7 @@ class LocationCard extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '${location['city'] ?? 'Ciudad Desconocida'}, ${location['neighborhood'] ?? 'Área Desconocida'}',
+                  '$city, $neighborhood',
                   style: const TextStyle(color: AppColors.white, fontSize: 14),
                 ),
               ),
@@ -31,7 +39,12 @@ class LocationCard extends StatelessWidget {
           DetailsTextButton(
             text: 'View on Map',
             onPressed: () {
-              debugPrint('Open map view for location: $location');
+              // TODO: Implementar la lógica para abrir el mapa.
+              // Por ejemplo, usando el paquete url_launcher y las coordenadas.
+              // final double lat = location['latitude'] ?? 0.0;
+              // final double lon = location['longitude'] ?? 0.0;
+              // final mapUrl = 'https://www.google.com/maps/search/?api=1&query=$lat,$lon';
+              debugPrint('Abrir mapa para la ubicación: $location');
             },
           ),
         ],

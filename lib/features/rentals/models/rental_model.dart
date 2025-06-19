@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 // Enum para un manejo de estado claro, robusto y sin errores de tipeo.
 enum RentalStatus {
+  awaiting_payment,
   awaiting_delivery, // Aceptado y pagado, esperando que el dueño entregue el producto.
   ongoing,           // El arrendatario tiene el producto.
   completed,         // El producto fue devuelto y el ciclo finalizó correctamente.

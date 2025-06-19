@@ -2,8 +2,9 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart'; // Importa el paquete
 import 'package:rentyapp/core/theme/app_colors.dart';
-import 'package:rentyapp/features/product/models/review_model.dart'; // Asegúrate que esta ruta es correcta
+import 'package:rentyapp/features/product/models/review_model.dart'; // Asegúrate que la ruta es correcta
 import 'details_text_button.dart';
 import 'section_card.dart';
 
@@ -13,10 +14,10 @@ class CustomerReviewsSection extends StatefulWidget {
   final int totalReviews;
 
   const CustomerReviewsSection({
-    Key? key,
+    super.key, // MEJORA: super.key
     required this.productId,
     required this.totalReviews,
-  }) : super(key: key);
+  });
 
   @override
   State<CustomerReviewsSection> createState() => _CustomerReviewsSectionState();
@@ -33,6 +34,9 @@ class _CustomerReviewsSectionState extends State<CustomerReviewsSection> {
 
   /// Obtiene las reseñas más recientes de la subcolección de un producto.
   Future<List<ReviewModel>> _fetchReviews(String productId) async {
+    // Si no hay reseñas totales, no hacemos la llamada a la base de datos.
+    if (widget.totalReviews == 0) return [];
+
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('products')
@@ -41,40 +45,61 @@ class _CustomerReviewsSectionState extends State<CustomerReviewsSection> {
           .orderBy('createdAt', descending: true)
           .limit(2)
           .get();
-      // ¡CORREGIDO! Ahora el modelo tiene el constructor .fromFirestore
       return snapshot.docs.map((doc) => ReviewModel.fromFirestore(doc)).toList();
     } catch (e) {
       debugPrint("Error fetching reviews: $e");
-      return [];
+      // Propagamos el error para que el FutureBuilder lo maneje.
+      throw Exception('Failed to load reviews');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Si sabemos que no hay reseñas, no mostramos nada.
+    if (widget.totalReviews == 0) {
+      return SectionCard(
+        title: 'Customer Reviews (0)',
+        child: const Center(
+          child: Text(
+            'Be the first to leave a review!',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+        ),
+      );
+    }
+
     return FutureBuilder<List<ReviewModel>>(
       future: _reviewsFuture,
       builder: (context, snapshot) {
+        // --- MEJORA: Lógica de carga y error más explícita ---
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+          // Muestra un placeholder mientras carga
+          return const _ReviewsPlaceholder();
         }
 
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const SizedBox.shrink(); // No muestra nada si no hay reseñas
+        if (snapshot.hasError) {
+          // Muestra un mensaje si la carga falla
+          return SectionCard(
+            title: 'Customer Reviews',
+            child: const Center(child: Text('Could not load reviews.', style: TextStyle(color: AppColors.error))),
+          );
         }
 
-        final reviews = snapshot.data!;
+        final reviews = snapshot.data ?? [];
+
         return SectionCard(
-          title: 'Customer Reviews',
+          title: 'Customer Reviews (${widget.totalReviews})',
           child: Column(
             children: [
               ...reviews.map((review) => _ReviewItem(review: review)).toList(),
+
               if (widget.totalReviews > reviews.length) ...[
                 const SizedBox(height: 16),
                 DetailsTextButton(
-                  text: 'Show More Reviews',
+                  text: 'Show all ${widget.totalReviews} reviews',
                   onPressed: () {
+                    // TODO: Implementar navegación a la pantalla de todas las reseñas
                     debugPrint('Navigate to all reviews for product ${widget.productId}');
-                    // TODO: Implementar navegación
                   },
                 ),
               ],
@@ -86,15 +111,16 @@ class _CustomerReviewsSectionState extends State<CustomerReviewsSection> {
   }
 }
 
-
 /// Widget privado para mostrar un solo ítem de reseña.
 class _ReviewItem extends StatelessWidget {
   final ReviewModel review;
 
-  const _ReviewItem({Key? key, required this.review}) : super(key: key);
+  const _ReviewItem({required this.review}); // super.key es opcional en widgets privados
 
   @override
   Widget build(BuildContext context) {
+    final String userInitials = review.userName.isNotEmpty ? review.userName[0].toUpperCase() : 'A';
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Row(
@@ -102,20 +128,26 @@ class _ReviewItem extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 20,
-            backgroundColor: AppColors.primary, // Un color de fallback consistente
-            // ¡CORREGIDO! Usamos los nuevos getters del modelo
-            backgroundImage: review.userImageUrl.isNotEmpty ? NetworkImage(review.userImageUrl) : null,
-            child: review.userImageUrl.isEmpty
-            // ¡CORREGIDO! Usamos los nuevos getters del modelo
-                ? Text(review.userName.isNotEmpty ? review.userName[0].toUpperCase() : 'A', style: const TextStyle(color: AppColors.white))
-                : null,
+            backgroundColor: AppColors.surface,
+            child: ClipOval(
+              // --- MEJORA: Usamos CachedNetworkImage para robustez ---
+              child: CachedNetworkImage(
+                imageUrl: review.userImageUrl,
+                fit: BoxFit.cover,
+                width: 40,
+                height: 40,
+                placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 2),
+                errorWidget: (context, url, error) => Center(
+                  child: Text(userInitials, style: const TextStyle(color: AppColors.white)),
+                ),
+              ),
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ¡CORREGIDO! Usamos los nuevos getters del modelo
                 Text(review.userName, style: const TextStyle(color: AppColors.white, fontWeight: FontWeight.w600, fontSize: 14)),
                 const SizedBox(height: 4),
                 Row(
@@ -132,6 +164,49 @@ class _ReviewItem extends StatelessWidget {
           )
         ],
       ),
+    );
+  }
+}
+
+/// Widget privado para mostrar un esqueleto de carga.
+class _ReviewsPlaceholder extends StatelessWidget {
+  const _ReviewsPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      title: 'Customer Reviews',
+      child: Column(
+        children: [
+          _buildPlaceholderItem(),
+          const SizedBox(height: 16),
+          _buildPlaceholderItem(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlaceholderItem() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const CircleAvatar(radius: 20, backgroundColor: AppColors.surface),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(width: 100, height: 14, color: AppColors.surface),
+              const SizedBox(height: 8),
+              Container(width: 80, height: 12, color: AppColors.surface),
+              const SizedBox(height: 10),
+              Container(width: double.infinity, height: 13, color: AppColors.surface),
+              const SizedBox(height: 6),
+              Container(width: 150, height: 13, color: AppColors.surface),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

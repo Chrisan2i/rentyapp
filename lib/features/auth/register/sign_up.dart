@@ -46,7 +46,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
     if (user != null) {
       print("✅ Registro exitoso: ${user.email}");
-      // Navegar a Home o siguiente pantalla
+      Navigator.pushReplacementNamed(context, '/home');
     } else {
       setState(() {
         _error = "Error al crear la cuenta";

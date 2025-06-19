@@ -5,11 +5,12 @@ import 'package:intl/intl.dart';
 import 'package:rentyapp/features/rentals/models/rental_model.dart';
 
 // --- Extensión para el Enum RentalStatus ---
-// Añade propiedades personalizadas para la UI sin modificar el modelo.
-// Esto centraliza la lógica de visualización del estado.
+// ¡NUEVO ESTADO AÑADIDO!
 extension RentalStatusExtension on RentalStatus {
   String get displayName {
     switch (this) {
+      case RentalStatus.awaiting_payment:
+        return 'Awaiting Payment';
       case RentalStatus.awaiting_delivery:
         return 'Awaiting Delivery';
       case RentalStatus.ongoing:
@@ -25,20 +26,21 @@ extension RentalStatusExtension on RentalStatus {
 
   Color get displayColor {
     switch (this) {
+      case RentalStatus.awaiting_payment:
+        return Colors.blue.shade600; // Un color distintivo para el pago
       case RentalStatus.awaiting_delivery:
-        return Colors.orange.shade700; // Naranja para estados pendientes
+        return Colors.orange.shade700;
       case RentalStatus.ongoing:
-        return const Color(0xFF0A84FF); // Azul para en curso
+        return const Color(0xFF0A84FF);
       case RentalStatus.completed:
-        return const Color(0xFF34C759); // Verde para completado
+        return const Color(0xFF34C759);
       case RentalStatus.cancelled:
-        return Colors.grey.shade600;    // Gris para cancelado
+        return Colors.grey.shade600;
       case RentalStatus.disputed:
-        return const Color(0xFFFF3B30); // Rojo para disputas
+        return const Color(0xFFFF3B30);
     }
   }
 }
-
 
 class RentalCardWidget extends StatelessWidget {
   final RentalModel rental;
@@ -54,8 +56,9 @@ class RentalCardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12.0),
+      margin: const EdgeInsets.symmetric(vertical: 8.0), // Margen para separar las tarjetas
       decoration: BoxDecoration(
-        color: const Color(0xFF2C2C2E), // Color de la tarjeta
+        color: const Color(0xFF2C2C2E),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -72,14 +75,15 @@ class RentalCardWidget extends StatelessWidget {
   }
 
   Widget _buildItemImage() {
-    // CORREGIDO: Acceso a la URL de la imagen y al título desde el mapa 'productInfo'.
     final imageUrl = rental.productInfo['imageUrl'] as String?;
     final title = rental.productInfo['title'] as String? ?? 'N/A';
+    final bool hasValidUrl = imageUrl != null && imageUrl.isNotEmpty;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(12.0),
-      child: Image.network(
-        imageUrl ?? '', // Se pasa un string vacío para forzar el errorBuilder si la URL es nula.
+      child: hasValidUrl
+          ? Image.network(
+        imageUrl,
         width: 72,
         height: 72,
         fit: BoxFit.cover,
@@ -93,93 +97,98 @@ class RentalCardWidget extends StatelessWidget {
           );
         },
         errorBuilder: (context, error, stackTrace) {
-          return Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade800,
-              borderRadius: BorderRadius.circular(12.0),
-            ),
-            child: Center(
-              child: Text(
-                title.length > 4 ? title.substring(0, 4) : title,
-                style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 14),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          );
+          return _buildFallbackImage(title);
         },
+      )
+          : _buildFallbackImage(title),
+    );
+  }
+
+  Widget _buildFallbackImage(String title) {
+    return Container(
+      width: 72,
+      height: 72,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade800,
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      child: Center(
+        child: Text(
+          title.isNotEmpty ? title.substring(0, title.length > 4 ? 4 : title.length) : 'N/A',
+          style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 14),
+          textAlign: TextAlign.center,
+        ),
       ),
     );
   }
 
+  // --- CORRECCIÓN DE OVERFLOW ---
+  // Se eliminó el SizedBox con altura fija para permitir que la columna crezca naturalmente.
   Widget _buildInfoColumn() {
-    // CORREGIDO: Se ajustó el estado "en curso" según el enum del modelo.
     final isOngoing = rental.status == RentalStatus.ongoing || rental.status == RentalStatus.awaiting_delivery;
     final datePrefix = isOngoing ? 'Due: ' : 'Completed: ';
     final formattedDate = DateFormat('MMM dd').format(rental.endDate);
-
-    // CORREGIDO: Acceso a los nombres desde los mapas 'ownerInfo' y 'renterInfo'.
     final ownerName = rental.ownerInfo['fullName'] as String? ?? 'Owner';
     final renterName = rental.renterInfo['fullName'] as String? ?? 'Renter';
     final relationshipText = currentTab == 'renter'
-        ? 'You rented from $ownerName'
-        : 'Rented by $renterName';
-
-    // CORREGIDO: Acceso al título y al precio total desde 'productInfo' y 'financials'.
+        ? 'From $ownerName'
+        : 'By $renterName';
     final itemTitle = rental.productInfo['title'] as String? ?? 'Untitled Product';
     final total = rental.financials['total'] ?? 0.0;
 
-    return SizedBox(
-      height: 72,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            itemTitle,
-            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Row(
-            children: [
-              Icon(Icons.person_outline, color: Colors.grey.shade500, size: 14),
-              const SizedBox(width: 4),
-              Expanded( // Expanded para evitar overflow si los nombres son largos
-                child: Text(
-                  relationshipText,
-                  style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
-                  overflow: TextOverflow.ellipsis,
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      // No necesitamos MainAxisAlignment.spaceBetween si no hay altura fija.
+      // El espaciado se manejará con SizedBox.
+      children: [
+        Text(
+          itemTitle,
+          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Icon(Icons.person_outline, color: Colors.grey.shade500, size: 14),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                relationshipText,
+                style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+                overflow: TextOverflow.ellipsis,
               ),
-            ],
-          ),
-          Row(
-            children: [
-              Icon(Icons.calendar_today_outlined, color: Colors.grey.shade500, size: 14),
-              const SizedBox(width: 4),
-              Text('$datePrefix$formattedDate', style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
-            ],
-          ),
-          Text(
-            '\$${total.toInt()} total',
-            style: const TextStyle(color: Color(0xFF0A84FF), fontSize: 15, fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Icon(Icons.calendar_today_outlined, color: Colors.grey.shade500, size: 14),
+            const SizedBox(width: 4),
+            Text('$datePrefix$formattedDate', style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          '\$${total.toStringAsFixed(2)} total', // Usar toFixed(2) para mostrar centavos
+          style: const TextStyle(color: Color(0xFF0A84FF), fontSize: 15, fontWeight: FontWeight.bold),
+        ),
+      ],
     );
   }
 
+  // --- CORRECCIÓN DE OVERFLOW ---
+  // Se eliminó la altura fija para mayor flexibilidad.
   Widget _buildActionsColumn(BuildContext context) {
     return SizedBox(
       width: 105,
-      height: 72,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _buildStatusTag(),
+          const SizedBox(height: 8), // Espacio entre la etiqueta y el botón
           ..._buildActionButtons(context),
         ],
       ),
@@ -187,7 +196,6 @@ class RentalCardWidget extends StatelessWidget {
   }
 
   Widget _buildStatusTag() {
-    // CORREGIDO: Uso de la extensión para obtener color y texto del estado.
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -197,40 +205,117 @@ class RentalCardWidget extends StatelessWidget {
       child: Text(
         rental.status.displayName,
         style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+        textAlign: TextAlign.center,
       ),
     );
   }
 
+  // --- LÓGICA DE BOTONES ACTUALIZADA ---
+  // Se añadió el caso para 'awaiting_payment'.
   List<Widget> _buildActionButtons(BuildContext context) {
-    // CORREGIDO: El estado 'late' no existe, se ajustó a los estados del modelo.
-    final bool isOngoing = rental.status == RentalStatus.ongoing || rental.status == RentalStatus.awaiting_delivery;
+    final bool isOngoingOrDelivering = rental.status == RentalStatus.ongoing || rental.status == RentalStatus.awaiting_delivery;
 
-    // La lógica de los botones ya usaba campos correctos del modelo (reviewedByRenter/Owner).
+    // Lógica para el Arrendatario (Renter)
     if (currentTab == 'renter') {
-      if (isOngoing) {
+      if (rental.status == RentalStatus.awaiting_payment) {
         return [
-          _buildActionButton(text: 'View Details', onPressed: () {}, context: context),
+          _buildActionButton(
+            text: 'Pay Now',
+            onPressed: () {
+              print('ACTION: Pay Now for rental ID: ${rental.rentalId}');
+              // TODO: Navegar a la pantalla de pago.
+            },
+            context: context,
+            color: Colors.green.shade600,
+          ),
         ];
-      } else { // Pasado (Completed, Cancelled, Disputed)
-        if (rental.status == RentalStatus.completed && !rental.reviewedByRenter) {
-          return [_buildActionButton(text: 'Leave Review', onPressed: () {}, context: context, color: const Color(0xFF34C759))];
-        } else {
-          return [_buildActionButton(text: 'View Details', onPressed: () {}, context: context, isSecondary: true)];
-        }
       }
-    } else { // Owner
-      if (isOngoing) {
+      if (isOngoingOrDelivering) {
         return [
-          _buildActionButton(text: 'View Details', onPressed: () {}, context: context),
+          _buildActionButton(
+            text: 'View Details',
+            onPressed: () {
+              print('ACTION: View Details (Renter) for rental ID: ${rental.rentalId}');
+              // TODO: Navegar a la pantalla de detalles del alquiler.
+            },
+            context: context,
+          ),
         ];
-      } else { // Pasado
-        // Los dueños pueden reportar problemas incluso después de completado.
-        if(rental.status == RentalStatus.completed || rental.status == RentalStatus.disputed) {
+      } else { // Alquiler Pasado (Completed, Cancelled, Disputed)
+        if (rental.status == RentalStatus.completed && !rental.reviewedByRenter) {
           return [
-            _buildActionButton(text: 'Report Issue', onPressed: () {}, context: context, color: const Color(0xFFFF3B30)),
+            _buildActionButton(
+              text: 'Leave Review',
+              onPressed: () {
+                print('ACTION: Leave Review for rental ID: ${rental.rentalId}');
+                // TODO: Navegar a la pantalla para dejar una reseña.
+              },
+              context: context,
+              color: const Color(0xFF34C759),
+            )
           ];
         } else {
-          return [_buildActionButton(text: 'View Details', onPressed: () {}, context: context, isSecondary: true)];
+          return [
+            _buildActionButton(
+              text: 'View Details',
+              onPressed: () {
+                print('ACTION: View Details (Past Rental) for rental ID: ${rental.rentalId}');
+              },
+              context: context,
+              isSecondary: true,
+            )
+          ];
+        }
+      }
+    }
+    // Lógica para el Dueño (Owner)
+    else {
+      // Para el dueño, "Awaiting Payment" es solo un estado informativo.
+      if (rental.status == RentalStatus.awaiting_payment) {
+        return [
+          _buildActionButton(
+            text: 'View Details',
+            onPressed: () {
+              print('ACTION: View Details (Owner, Awaiting Payment) for rental ID: ${rental.rentalId}');
+            },
+            context: context,
+            isSecondary: true,
+          ),
+        ];
+      }
+      if (isOngoingOrDelivering) {
+        return [
+          _buildActionButton(
+            text: 'View Details',
+            onPressed: () {
+              print('ACTION: View Details (Owner) for rental ID: ${rental.rentalId}');
+            },
+            context: context,
+          ),
+        ];
+      } else { // Alquiler Pasado
+        if (rental.status == RentalStatus.completed || rental.status == RentalStatus.disputed) {
+          return [
+            _buildActionButton(
+              text: 'Report Issue',
+              onPressed: () {
+                print('ACTION: Report Issue for rental ID: ${rental.rentalId}');
+              },
+              context: context,
+              color: const Color(0xFFFF3B30),
+            )
+          ];
+        } else {
+          return [
+            _buildActionButton(
+              text: 'View Details',
+              onPressed: () {
+                print('ACTION: View Details (Past Rental) for rental ID: ${rental.rentalId}');
+              },
+              context: context,
+              isSecondary: true,
+            )
+          ];
         }
       }
     }
@@ -259,8 +344,9 @@ class RentalCardWidget extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8),
           textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
           elevation: 0,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap, // Reduce el padding extra del tap
         ),
-        child: Text(text, textAlign: TextAlign.center),
+        child: Text(text, textAlign: TextAlign.center, maxLines: 1),
       ),
     );
   }
