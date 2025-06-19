@@ -1,82 +1,65 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+// lib/models/rental_request_model.dart
 
 class RentalRequestModel {
   final String requestId;
+  final String status; // 'pending', 'accepted', 'rejected', 'expired'
   final String productId;
   final String ownerId;
   final String renterId;
-  final Timestamp startDate;
-  final Timestamp endDate;
-  final int daysRequested;
-  final String message;
-  final String paymentMethod;
-  final String status;
-  final Timestamp createdAt;
-  final Timestamp? respondedAt;
+  final DateTime startDate;
+  final DateTime endDate;
+  final String messageToOwner;
 
-  // ✅ Nuevos campos financieros
-  final double pricePerDay;
-  final double subtotal;
-  final double vat;
-  final double total;
+  // Desglose Financiero
+  final Map<String, double> financials;
+
+  final DateTime createdAt;
+  final DateTime expiresAt;
 
   RentalRequestModel({
     required this.requestId,
+    required this.status,
     required this.productId,
     required this.ownerId,
     required this.renterId,
     required this.startDate,
     required this.endDate,
-    required this.daysRequested,
-    required this.message,
-    required this.paymentMethod,
-    required this.status,
+    required this.messageToOwner,
+    required this.financials,
     required this.createdAt,
-    required this.pricePerDay,
-    required this.subtotal,
-    required this.vat,
-    required this.total,
-    this.respondedAt,
+    required this.expiresAt,
   });
 
   factory RentalRequestModel.fromMap(Map<String, dynamic> map, String id) {
     return RentalRequestModel(
       requestId: id,
+      status: map['status'] ?? 'pending',
       productId: map['productId'] ?? '',
       ownerId: map['ownerId'] ?? '',
       renterId: map['renterId'] ?? '',
-      startDate: map['startDate'] ?? Timestamp.now(),
-      endDate: map['endDate'] ?? Timestamp.now(),
-      daysRequested: map['daysRequested'] ?? 0,
-      message: map['message'] ?? '',
-      paymentMethod: map['paymentMethod'] ?? '',
-      status: map['status'] ?? 'pending',
-      createdAt: map['createdAt'] ?? Timestamp.now(),
-      respondedAt: map['respondedAt'],
-      pricePerDay: (map['pricePerDay'] as num?)?.toDouble() ?? 0.0,
-      subtotal: (map['subtotal'] as num?)?.toDouble() ?? 0.0,
-      vat: (map['vat'] as num?)?.toDouble() ?? 0.0,
-      total: (map['total'] as num?)?.toDouble() ?? 0.0,
+      startDate: (map['startDate'] as Timestamp).toDate(),
+      endDate: (map['endDate'] as Timestamp).toDate(),
+      messageToOwner: map['messageToOwner'] ?? '',
+      financials: (map['financials'] as Map<String, dynamic>? ?? {})
+          .map((key, value) => MapEntry(key, (value as num).toDouble())),
+      createdAt: (map['createdAt'] as Timestamp).toDate(),
+      expiresAt: (map['expiresAt'] as Timestamp).toDate(),
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
+      'status': status,
       'productId': productId,
       'ownerId': ownerId,
       'renterId': renterId,
       'startDate': startDate,
       'endDate': endDate,
-      'daysRequested': daysRequested,
-      'message': message,
-      'paymentMethod': paymentMethod,
-      'status': status,
+      'messageToOwner': messageToOwner,
+      'financials': financials,
       'createdAt': createdAt,
-      'respondedAt': respondedAt,
-      'pricePerDay': pricePerDay,
-      'subtotal': subtotal,
-      'vat': vat,
-      'total': total,
+      'expiresAt': expiresAt,
     };
   }
 }

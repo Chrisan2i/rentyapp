@@ -1,3 +1,5 @@
+// lib/features/product/widgets/customer_reviews_section.dart
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
@@ -26,7 +28,6 @@ class _CustomerReviewsSectionState extends State<CustomerReviewsSection> {
   @override
   void initState() {
     super.initState();
-    // La lógica de fetch se inicia una sola vez cuando el widget se crea.
     _reviewsFuture = _fetchReviews(widget.productId);
   }
 
@@ -36,14 +37,14 @@ class _CustomerReviewsSectionState extends State<CustomerReviewsSection> {
       final snapshot = await FirebaseFirestore.instance
           .collection('products')
           .doc(productId)
-          .collection('reviews') // Asume la subcolección 'reviews'
+          .collection('reviews')
           .orderBy('createdAt', descending: true)
-          .limit(2) // Limita a 2 para la vista previa
+          .limit(2)
           .get();
+      // ¡CORREGIDO! Ahora el modelo tiene el constructor .fromFirestore
       return snapshot.docs.map((doc) => ReviewModel.fromFirestore(doc)).toList();
     } catch (e) {
       debugPrint("Error fetching reviews: $e");
-      // Retorna una lista vacía en caso de error para no romper la UI.
       return [];
     }
   }
@@ -53,32 +54,27 @@ class _CustomerReviewsSectionState extends State<CustomerReviewsSection> {
     return FutureBuilder<List<ReviewModel>>(
       future: _reviewsFuture,
       builder: (context, snapshot) {
-        // Estado de carga
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator(color: AppColors.primary));
         }
 
-        // Si no hay datos o la lista está vacía, no muestra nada.
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const SizedBox.shrink();
+          return const SizedBox.shrink(); // No muestra nada si no hay reseñas
         }
 
-        // Si hay datos, muestra la tarjeta de reseñas.
         final reviews = snapshot.data!;
         return SectionCard(
           title: 'Customer Reviews',
           child: Column(
             children: [
-              // Mapea la lista de reseñas a widgets de ReviewItem
               ...reviews.map((review) => _ReviewItem(review: review)).toList(),
-              // Muestra el botón "Ver más" solo si hay más reseñas que las mostradas
               if (widget.totalReviews > reviews.length) ...[
                 const SizedBox(height: 16),
                 DetailsTextButton(
                   text: 'Show More Reviews',
                   onPressed: () {
-                    // TODO: Implementar navegación a la pantalla de todas las reseñas
                     debugPrint('Navigate to all reviews for product ${widget.productId}');
+                    // TODO: Implementar navegación
                   },
                 ),
               ],
@@ -92,7 +88,6 @@ class _CustomerReviewsSectionState extends State<CustomerReviewsSection> {
 
 
 /// Widget privado para mostrar un solo ítem de reseña.
-/// Se mantiene dentro de este archivo porque solo es usado por CustomerReviewsSection.
 class _ReviewItem extends StatelessWidget {
   final ReviewModel review;
 
@@ -107,9 +102,11 @@ class _ReviewItem extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 20,
-            backgroundColor: Colors.indigo, // Color de fallback
+            backgroundColor: AppColors.primary, // Un color de fallback consistente
+            // ¡CORREGIDO! Usamos los nuevos getters del modelo
             backgroundImage: review.userImageUrl.isNotEmpty ? NetworkImage(review.userImageUrl) : null,
             child: review.userImageUrl.isEmpty
+            // ¡CORREGIDO! Usamos los nuevos getters del modelo
                 ? Text(review.userName.isNotEmpty ? review.userName[0].toUpperCase() : 'A', style: const TextStyle(color: AppColors.white))
                 : null,
           ),
@@ -118,6 +115,7 @@ class _ReviewItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ¡CORREGIDO! Usamos los nuevos getters del modelo
                 Text(review.userName, style: const TextStyle(color: AppColors.white, fontWeight: FontWeight.w600, fontSize: 14)),
                 const SizedBox(height: 4),
                 Row(

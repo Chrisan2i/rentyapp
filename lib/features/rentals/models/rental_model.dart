@@ -1,149 +1,108 @@
 // lib/features/rentals/models/rental_model.dart
-import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-// El enum ahora incluye 'late' y 'cancelled' para ser más completo.
-enum RentalStatus { ongoing, late, completed, cancelled }
-
-// Esta 'extension' es una forma limpia de asociar propiedades (como nombre y color)
-// a cada estado del enum, sin ensuciar la lógica del modelo.
-extension RentalStatusDetails on RentalStatus {
-  String get displayName {
-    switch (this) {
-      case RentalStatus.ongoing: return 'ongoing';
-      case RentalStatus.late: return 'late';
-      case RentalStatus.completed: return 'completed';
-      case RentalStatus.cancelled: return 'cancelled';
-    }
-  }
-
-  Color get displayColor {
-    switch (this) {
-      case RentalStatus.ongoing: return const Color(0xFF007BFF); // Azul
-      case RentalStatus.late: return const Color(0xFFFFA500);    // Naranja
-      case RentalStatus.completed: return const Color(0xFF28A745);  // Verde
-      case RentalStatus.cancelled: return Colors.red;
-    }
-  }
+// Enum para un manejo de estado claro, robusto y sin errores de tipeo.
+enum RentalStatus {
+  awaiting_delivery, // Aceptado y pagado, esperando que el dueño entregue el producto.
+  ongoing,           // El arrendatario tiene el producto.
+  completed,         // El producto fue devuelto y el ciclo finalizó correctamente.
+  cancelled,         // El alquiler fue cancelado antes o durante el proceso.
+  disputed           // Se ha reportado un problema (ej. daño, no devolución).
 }
 
 class RentalModel {
   final String rentalId;
-  final String itemId;
-  final String itemName;         // <-- NUEVO
-  final String itemImageUrl;     // <-- NUEVO
-  final String renterId;
-  final String renterName;       // <-- NUEVO
-  final String ownerId;
-  final String ownerName;        // <-- NUEVO
+  final RentalStatus status;
+
+  // --- Información Denormalizada (Congelada al momento del alquiler) ---
+  // Guardamos esta información aquí para evitar consultas extra a otras colecciones
+  // y para tener un registro histórico de cómo eran los datos en ese momento.
+
+  // Información del producto alquilado
+  final Map<String, dynamic> productInfo; // ej: {'productId': '...', 'title': '...', 'imageUrl': '...'}
+
+  // Información del dueño del producto
+  final Map<String, dynamic> ownerInfo; // ej: {'userId': '...', 'fullName': '...'}
+
+  // Información del arrendatario
+  final Map<String, dynamic> renterInfo; // ej: {'userId': '...', 'fullName': '...'}
+
+  // --- Fechas y Finanzas ---
   final DateTime startDate;
   final DateTime endDate;
-  final double totalPrice;
-  final RentalStatus status;
+  final Map<String, double> financials; // ej: {'subtotal': 50.0, 'serviceFee': 7.5, 'total': 57.5}
+
+  // --- Seguimiento del Proceso y Estado ---
+  final DateTime? deliveryConfirmedAt; // Timestamp de cuando el arrendatario confirma la recepción.
+  final DateTime? returnConfirmedAt;   // Timestamp de cuando el dueño confirma la devolución.
   final bool reviewedByRenter;
   final bool reviewedByOwner;
-  final bool issueReported;      // <-- NUEVO (Para el botón Report Issue)
-  final DateTime createdAt;
+
+  // --- Metadatos ---
+  final DateTime createdAt; // Fecha de creación del documento de alquiler.
+
+  // <<<--- CAMPO CLAVE PARA CONSULTAS EFICIENTES ---<<<
+  // Contiene los UIDs tanto del dueño como del arrendatario.
+  // Permite hacer una sola consulta 'array-contains' para obtener todos los alquileres de un usuario.
+  final List<String> involvedUsers;
 
   RentalModel({
     required this.rentalId,
-    required this.itemId,
-    required this.itemName,
-    required this.itemImageUrl,
-    required this.renterId,
-    required this.renterName,
-    required this.ownerId,
-    required this.ownerName,
+    required this.status,
+    required this.productInfo,
+    required this.ownerInfo,
+    required this.renterInfo,
     required this.startDate,
     required this.endDate,
-    required this.totalPrice,
-    required this.status,
-    required this.reviewedByRenter,
-    required this.reviewedByOwner,
-    this.issueReported = false, // Valor por defecto
+    required this.financials,
+    this.deliveryConfirmedAt,
+    this.returnConfirmedAt,
+    this.reviewedByRenter = false,
+    this.reviewedByOwner = false,
     required this.createdAt,
+    required this.involvedUsers,
   });
 
-  // Convertir el modelo a un mapa para guardarlo en Firestore
-  Map<String, dynamic> toJson() => {
-    'rentalId': rentalId,
-    'itemId': itemId,
-    'itemName': itemName,
-    'itemImageUrl': itemImageUrl,
-    'renterId': renterId,
-    'renterName': renterName,
-    'ownerId': ownerId,
-    'ownerName': ownerName,
-    'startDate': startDate.toIso8601String(),
-    'endDate': endDate.toIso8601String(),
-    'totalPrice': totalPrice,
-    'status': status.name, // .name convierte el enum a String (ej: 'ongoing')
-    'reviewedByRenter': reviewedByRenter,
-    'reviewedByOwner': reviewedByOwner,
-    'issueReported': issueReported,
-    'createdAt': createdAt.toIso8601String(),
-  };
-
-  // Crear un modelo a partir de un mapa de Firestore
-  factory RentalModel.fromJson(Map<String, dynamic> json) {
+  /// Factory constructor para crear una instancia de RentalModel desde un mapa de Firestore.
+  factory RentalModel.fromMap(Map<String, dynamic> map, String id) {
     return RentalModel(
-      rentalId: json['rentalId'] ?? '',
-      itemId: json['itemId'] ?? '',
-      itemName: json['itemName'] ?? 'No Name', // Añade valores por defecto
-      itemImageUrl: json['itemImageUrl'] ?? 'https://placehold.co/80x80', // URL por defecto
-      renterId: json['renterId'] ?? '',
-      renterName: json['renterName'] ?? 'N/A',
-      ownerId: json['ownerId'] ?? '',
-      ownerName: json['ownerName'] ?? 'N/A',
-      startDate: DateTime.parse(json['startDate']),
-      endDate: DateTime.parse(json['endDate']),
-      totalPrice: (json['totalPrice'] ?? 0.0).toDouble(),
+      rentalId: id,
       status: RentalStatus.values.firstWhere(
-            (e) => e.name == json['status'],
-        orElse: () => RentalStatus.ongoing, // Valor seguro si el status es nulo o inválido
+            (e) => e.name == map['status'],
+        orElse: () => RentalStatus.cancelled, // Valor por defecto seguro
       ),
-      reviewedByRenter: json['reviewedByRenter'] ?? false,
-      reviewedByOwner: json['reviewedByOwner'] ?? false,
-      issueReported: json['issueReported'] ?? false,
-      createdAt: DateTime.parse(json['createdAt']),
+      productInfo: Map<String, dynamic>.from(map['productInfo'] ?? {}),
+      ownerInfo: Map<String, dynamic>.from(map['ownerInfo'] ?? {}),
+      renterInfo: Map<String, dynamic>.from(map['renterInfo'] ?? {}),
+      startDate: (map['startDate'] as Timestamp).toDate(),
+      endDate: (map['endDate'] as Timestamp).toDate(),
+      financials: (map['financials'] as Map<String, dynamic>? ?? {})
+          .map((key, value) => MapEntry(key, (value as num).toDouble())),
+      deliveryConfirmedAt: (map['deliveryConfirmedAt'] as Timestamp?)?.toDate(),
+      returnConfirmedAt: (map['returnConfirmedAt'] as Timestamp?)?.toDate(),
+      reviewedByRenter: map['reviewedByRenter'] ?? false,
+      reviewedByOwner: map['reviewedByOwner'] ?? false,
+      createdAt: (map['createdAt'] as Timestamp).toDate(),
+      involvedUsers: List<String>.from(map['involvedUsers'] ?? []),
     );
   }
 
-  // Método copyWith para crear una copia del objeto con algunos campos modificados
-  RentalModel copyWith({
-    String? rentalId,
-    String? itemId,
-    String? itemName,
-    String? itemImageUrl,
-    String? renterId,
-    String? renterName,
-    String? ownerId,
-    String? ownerName,
-    DateTime? startDate,
-    DateTime? endDate,
-    double? totalPrice,
-    RentalStatus? status,
-    bool? reviewedByRenter,
-    bool? reviewedByOwner,
-    bool? issueReported,
-    DateTime? createdAt,
-  }) {
-    return RentalModel(
-      rentalId: rentalId ?? this.rentalId,
-      itemId: itemId ?? this.itemId,
-      itemName: itemName ?? this.itemName,
-      itemImageUrl: itemImageUrl ?? this.itemImageUrl,
-      renterId: renterId ?? this.renterId,
-      renterName: renterName ?? this.renterName,
-      ownerId: ownerId ?? this.ownerId,
-      ownerName: ownerName ?? this.ownerName,
-      startDate: startDate ?? this.startDate,
-      endDate: endDate ?? this.endDate,
-      totalPrice: totalPrice ?? this.totalPrice,
-      status: status ?? this.status,
-      reviewedByRenter: reviewedByRenter ?? this.reviewedByRenter,
-      reviewedByOwner: reviewedByOwner ?? this.reviewedByOwner,
-      issueReported: issueReported ?? this.issueReported,
-      createdAt: createdAt ?? this.createdAt,
-    );
+  /// Convierte la instancia de RentalModel a un mapa para guardarlo en Firestore.
+  Map<String, dynamic> toMap() {
+    return {
+      'status': status.name,
+      'productInfo': productInfo,
+      'ownerInfo': ownerInfo,
+      'renterInfo': renterInfo,
+      'startDate': startDate,
+      'endDate': endDate,
+      'financials': financials,
+      'deliveryConfirmedAt': deliveryConfirmedAt,
+      'returnConfirmedAt': returnConfirmedAt,
+      'reviewedByRenter': reviewedByRenter,
+      'reviewedByOwner': reviewedByOwner,
+      'createdAt': createdAt,
+      'involvedUsers': involvedUsers,
+    };
   }
 }

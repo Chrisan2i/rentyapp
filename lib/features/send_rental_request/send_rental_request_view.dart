@@ -1,10 +1,11 @@
-import 'package:firebase_auth/firebase_auth.dart'; // Para obtener el ID del usuario actual
+// lib/features/send_rental_request/send_rental_request_view.dart
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
 import 'package:rentyapp/features/product/models/product_model.dart';
+import 'package:rentyapp/features/rentals/services/rental_services.dart';
 import 'package:rentyapp/features/send_rental_request/models/rental_request_model.dart';
-import '../rentals/services/rental_services.dart';
 
 class SendRentalRequestView extends StatefulWidget {
   final ProductModel product;
@@ -30,7 +31,7 @@ class _SendRentalRequestViewState extends State<SendRentalRequestView> {
           ? _endDate!.difference(_startDate!).inDays + 1
           : 0;
 
-  double get _pricePerDay => widget.product.rentalPrices['day'] ?? 0.0;
+  double get _pricePerDay => widget.product.rentalPrices.perDay;
 
   double get _subtotal => _daysRequested * _pricePerDay;
   static const double VAT_RATE = 0.16; // 16% de IVA
@@ -40,13 +41,14 @@ class _SendRentalRequestViewState extends State<SendRentalRequestView> {
 
   /// Muestra el selector de fechas y actualiza el estado.
   Future<void> _pickDateRange() async {
+    final now = DateTime.now();
     final newDateRange = await showDateRangePicker(
       context: context,
       initialDateRange: _startDate != null && _endDate != null
           ? DateTimeRange(start: _startDate!, end: _endDate!)
           : null,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      firstDate: DateTime(now.year, now.month, now.day),
+      lastDate: now.add(const Duration(days: 365)),
     );
 
     if (newDateRange != null) {
@@ -67,7 +69,6 @@ class _SendRentalRequestViewState extends State<SendRentalRequestView> {
       return;
     }
 
-    // ¡IMPORTANTE! Asume que tienes un usuario logueado con Firebase Auth.
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -82,40 +83,51 @@ class _SendRentalRequestViewState extends State<SendRentalRequestView> {
 
     final request = RentalRequestModel(
       requestId: '',
-      // Firestore generará el ID
+      status: 'pending',
       productId: widget.product.productId,
       ownerId: widget.product.ownerId,
       renterId: currentUser.uid,
-      startDate: Timestamp.fromDate(_startDate!),
-      endDate: Timestamp.fromDate(_endDate!),
-      daysRequested: _daysRequested,
-      message: _messageController.text,
-      paymentMethod: 'Credit Card',
-      // Placeholder, esto debería ser seleccionable
-      status: 'pending',
-      createdAt: Timestamp.now(),
-      pricePerDay: _pricePerDay,
-      subtotal: _subtotal,
-      vat: _vat,
-      total: _total,
+      startDate: _startDate!,
+      endDate: _endDate!,
+      messageToOwner: _messageController.text,
+      financials: {
+        'pricePerDay': _pricePerDay,
+        'daysRequested': _daysRequested.toDouble(),
+        'subtotal': _subtotal,
+        'vat': _vat,
+        'total': _total,
+      },
+      createdAt: DateTime.now(),
+      expiresAt: DateTime.now().add(const Duration(hours: 24)),
     );
 
-    final success = await _rentalService.createRentalRequest(request);
+    try {
+      // --- LÓGICA DE SERVICIO ACTUALIZADA ---
+      // El servicio ahora lanza un error si falla.
+      await _rentalService.createRentalRequest(request);
 
-    setState(() => _isLoading = false);
-
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Rental request sent successfully!'),
-            backgroundColor: Colors.green),
-      );
-      Navigator.of(context).pop(); // Vuelve a la pantalla de detalles
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Failed to send request. Please try again.'),
-            backgroundColor: AppColors.error),
-      );
+      // Si llegamos aquí, la operación fue exitosa.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Rental request sent successfully!'),
+              backgroundColor: Colors.green),
+        );
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      // Si el servicio lanza un error, lo capturamos aquí.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Failed to send request. Please try again.'),
+              backgroundColor: AppColors.error),
+        );
+      }
+    } finally {
+      // Este bloque se ejecuta siempre, tanto si hay éxito como si hay error.
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -126,6 +138,7 @@ class _SendRentalRequestViewState extends State<SendRentalRequestView> {
       appBar: AppBar(
         title: const Text('Rental Request'),
         backgroundColor: AppColors.surface,
+        elevation: 0,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
@@ -134,27 +147,18 @@ class _SendRentalRequestViewState extends State<SendRentalRequestView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('You are requesting to rent:', style: TextStyle(
-                  color: AppColors.textSecondary, fontSize: 16)),
+              Text('You are requesting to rent:', style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
               const SizedBox(height: 8),
-              Text(widget.product.title, style: TextStyle(
-                  color: AppColors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold)),
+              Text(widget.product.title, style: const TextStyle(color: AppColors.white, fontSize: 22, fontWeight: FontWeight.bold)),
               const SizedBox(height: 24),
 
               // --- Sección de Fechas ---
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: Icon(Icons.calendar_today, color: AppColors.primary),
-                title: Text('Rental Dates', style: TextStyle(
-                    color: AppColors.white, fontWeight: FontWeight.bold)),
+                leading: const Icon(Icons.calendar_today, color: AppColors.primary),
+                title: const Text('Rental Dates', style: TextStyle(color: AppColors.white, fontWeight: FontWeight.bold)),
                 subtitle: Text(
-                  _startDate == null
-                      ? 'Select start and end dates'
-                      : '${_startDate!.toLocal().toString().split(
-                      ' ')[0]} - ${_endDate!.toLocal().toString().split(
-                      ' ')[0]}',
+                  _startDate == null ? 'Select start and end dates' : '${_startDate!.toLocal().toString().split(' ')[0]} - ${_endDate!.toLocal().toString().split(' ')[0]}',
                   style: TextStyle(color: AppColors.textSecondary),
                 ),
                 onTap: _pickDateRange,
@@ -164,32 +168,27 @@ class _SendRentalRequestViewState extends State<SendRentalRequestView> {
               // --- Sección de Resumen de Pago ---
               if (_daysRequested > 0) ...[
                 const SizedBox(height: 16),
-                Text('Price Summary', style: TextStyle(color: AppColors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold)),
+                const Text('Price Summary', style: TextStyle(color: AppColors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
-                _buildPriceRow(
-                    'Price per day:', '\$${_pricePerDay.toStringAsFixed(2)}'),
+                _buildPriceRow('Price per day:', '\$${_pricePerDay.toStringAsFixed(2)}'),
                 _buildPriceRow('Number of days:', '$_daysRequested'),
-                _buildPriceRow(
-                    'Subtotal:', '\$${_subtotal.toStringAsFixed(2)}'),
+                _buildPriceRow('Subtotal:', '\$${_subtotal.toStringAsFixed(2)}'),
                 _buildPriceRow('VAT (16%):', '\$${_vat.toStringAsFixed(2)}'),
                 const Divider(color: AppColors.surface, height: 24),
-                _buildPriceRow(
-                    'Total:', '\$${_total.toStringAsFixed(2)}', isTotal: true),
+                _buildPriceRow('Total:', '\$${_total.toStringAsFixed(2)}', isTotal: true),
                 const SizedBox(height: 24),
               ],
 
               // --- Sección de Mensaje ---
               TextFormField(
                 controller: _messageController,
-                style: TextStyle(color: AppColors.white),
+                style: const TextStyle(color: AppColors.white),
                 maxLines: 3,
                 decoration: InputDecoration(
                   labelText: 'Message to the owner (optional)',
                   labelStyle: TextStyle(color: AppColors.textSecondary),
                   hintText: 'e.g., "I need it for a weekend project."',
-                  hintStyle: TextStyle(color: AppColors.hint),
+                  hintStyle: const TextStyle(color: AppColors.hint),
                   filled: true,
                   fillColor: AppColors.surface,
                   border: OutlineInputBorder(
@@ -197,7 +196,6 @@ class _SendRentalRequestViewState extends State<SendRentalRequestView> {
                       borderSide: BorderSide.none),
                 ),
               ),
-
               const SizedBox(height: 32),
 
               // --- Botón de Envío ---
@@ -208,13 +206,11 @@ class _SendRentalRequestViewState extends State<SendRentalRequestView> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Send Rental Request', style: TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.bold)),
+                      ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 3)
+                      : const Text('Send Rental Request', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],

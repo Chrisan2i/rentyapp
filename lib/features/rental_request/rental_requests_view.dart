@@ -1,12 +1,15 @@
-import 'package:firebase_auth/firebase_auth.dart';
+// ARCHIVO: lib/features/rentals/rental_requests_view.dart
+
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:rentyapp/core/controllers/controller.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
 import 'package:rentyapp/features/send_rental_request/models/rental_request_model.dart';
 import 'package:rentyapp/features/rentals/services/rental_services.dart';
 import 'widgets/rental_request_card.dart';
 
 class RentalRequestsView extends StatefulWidget {
-  const RentalRequestsView({Key? key}) : super(key: key);
+  const RentalRequestsView({super.key});
 
   @override
   State<RentalRequestsView> createState() => _RentalRequestsViewState();
@@ -14,7 +17,14 @@ class RentalRequestsView extends StatefulWidget {
 
 class _RentalRequestsViewState extends State<RentalRequestsView> {
   final RentalService _rentalService = RentalService();
-  final String? _currentUserId = FirebaseAuth.instance.currentUser?.uid;
+  String? _currentUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    // Obtenemos el userId del AppController de forma segura
+    _currentUserId = Provider.of<AppController>(context, listen: false).currentUser?.userId;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,12 +34,10 @@ class _RentalRequestsViewState extends State<RentalRequestsView> {
         title: const Text('Rental Requests'),
         backgroundColor: AppColors.background,
         elevation: 0,
-        actions: [
-          IconButton(
-            onPressed: () { /* TODO: Implementar filtro */ },
-            icon: const Icon(Icons.filter_list_rounded, color: AppColors.primary),
-          ),
-        ],
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
       body: _currentUserId == null
           ? const Center(child: Text("Please log in to see your requests.", style: TextStyle(color: Colors.white)))
@@ -37,10 +45,10 @@ class _RentalRequestsViewState extends State<RentalRequestsView> {
         stream: _rentalService.getRentalRequestsForOwner(_currentUserId!),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
           }
           if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}", style: TextStyle(color: AppColors.error)));
+            return Center(child: Text("Error: ${snapshot.error}", style: const TextStyle(color: AppColors.danger)));
           }
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(child: Text("You have no incoming rental requests.", style: TextStyle(color: Colors.white70)));
@@ -51,6 +59,7 @@ class _RentalRequestsViewState extends State<RentalRequestsView> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             itemCount: requests.length,
             itemBuilder: (context, index) {
+              // La tarjeta se encargará de buscar los datos del producto y del arrendatario.
               return RentalRequestCard(request: requests[index]);
             },
           );

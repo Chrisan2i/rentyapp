@@ -1,8 +1,10 @@
+// ARCHIVO: lib/features/profile/widgets/profile_header.dart
+
 import 'package:flutter/material.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
 import 'package:rentyapp/core/theme/app_text_styles.dart';
 import 'package:rentyapp/features/auth/models/user_model.dart';
-import 'package:rentyapp/features/settings/settings_view.dart';
+import 'package:rentyapp/features/profile/edit/edit_profile_view.dart'; // Para navegar a editar perfil
 
 class ProfileHeader extends StatelessWidget {
   final UserModel user;
@@ -14,11 +16,8 @@ class ProfileHeader extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 48,
-          backgroundImage: NetworkImage(
-            user.profileImageUrl.isNotEmpty
-                ? user.profileImageUrl
-                : 'https://res.cloudinary.com/do9dtxrvh/image/upload/v1742413057/Untitled_design_1_hvuwau.png',
-          ),
+          backgroundColor: AppColors.surface,
+          backgroundImage: NetworkImage(user.profileImageUrl),
         ),
         const SizedBox(height: 16),
         Text(user.fullName, style: AppTextStyles.sectionTitle),
@@ -29,23 +28,25 @@ class ProfileHeader extends StatelessWidget {
           children: [
             const Icon(Icons.star, color: AppColors.primary, size: 18),
             const SizedBox(width: 4),
-            Text((user.rating / 10).toStringAsFixed(1), style: AppTextStyles.inputLabel),
+            Text(user.rating.toStringAsFixed(1), style: AppTextStyles.inputLabel),
             const SizedBox(width: 4),
-            const Text('(127 reviews)', style: AppTextStyles.subtitle),
+            // <<<--- CORRECCIÓN: Usando el dato real del modelo ---<<<
+            Text('(${user.totalReviews} reviews)', style: AppTextStyles.subtitle),
           ],
         ),
         TextButton.icon(
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const SettingsView()),
+              MaterialPageRoute(builder: (_) => const EditProfileView()),
             );
           },
           icon: const Icon(Icons.edit, size: 18, color: AppColors.primary),
-          label: const Text('Settings', style: AppTextStyles.bannerAction),
+          label: const Text('Edit Profile', style: AppTextStyles.bannerAction),
         ),
         const SizedBox(height: 16),
-        if (user.verified)
+        // <<<--- CORRECCIÓN: Se usa el enum 'verificationStatus' del modelo ---<<<
+        if (user.verificationStatus != VerificationStatus.notVerified)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(

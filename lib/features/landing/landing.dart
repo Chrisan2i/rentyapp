@@ -1,10 +1,8 @@
+// lib/features/landing/landing_page.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:rentyapp/core/theme/app_colors.dart';
 import 'package:rentyapp/core/theme/app_text_styles.dart';
-import 'package:rentyapp/core/controllers/controller.dart';
 import 'package:rentyapp/features/landing/widgets/bottom_cta_banner.dart';
-import 'package:rentyapp/core/widgets/custom_bottom_navbar.dart';
+import 'package:rentyapp/features/landing/widgets/explore_button.dart'; // <<<--- Usamos el widget corregido
 import 'package:rentyapp/features/landing/widgets/header_logo_and_notification.dart';
 import 'package:rentyapp/features/landing/widgets/headline_texts.dart';
 import 'package:rentyapp/features/landing/widgets/popular_categories.dart';
@@ -16,50 +14,42 @@ class LandingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<Controller>();
+    // NOTA: Ya no necesitamos instanciar el controlador aquí si no lo usamos directamente.
+    // Los widgets hijos como HeaderLogoAndNotification lo obtendrán por su cuenta.
 
     return Scaffold(
+      // Se usa Scaffold para tener un color de fondo por defecto y estructura.
+      backgroundColor: Colors.black, // O tu color de fondo de AppColors
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 24),
-        children: [
-          const SizedBox(height: 60),
-          const HeaderLogoAndNotification(),
-          const SizedBox(height: 40),
-          const HeadlineTexts(),
-          const SizedBox(height: 20),
-          const Text(
+        children: const [ // Usamos const porque los widgets hijos son constantes
+          SizedBox(height: 60),
+          HeaderLogoAndNotification(),
+          SizedBox(height: 40),
+          HeadlineTexts(),
+          SizedBox(height: 20),
+          Text(
             'Trusted by thousands to rent tools, gadgets, and more.',
             textAlign: TextAlign.center,
             style: AppTextStyles.subtitle,
           ),
-          const SizedBox(height: 30),
-          ElevatedButton(
-            onPressed: () => context.read<Controller>().onExplorePressed(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            ),
-            child: const Center(
-              child: Text('Start Exploring', style: AppTextStyles.button),
-            ),
-          ),
-          const SizedBox(height: 30),
-          const StatisticsRow(),
-          const SizedBox(height: 30),
-          const Text('Quick Access', style: AppTextStyles.sectionTitle),
-          const SizedBox(height: 16),
-          const QuickAccessRow(),
-          const SizedBox(height: 30),
-          const Text('Popular Categories', style: AppTextStyles.sectionTitle),
-          const SizedBox(height: 16),
-          const PopularCategories(),
-          const SizedBox(height: 30),
-          const BottomCtaBanner(),
-          const SizedBox(height: 100),
+          SizedBox(height: 30),
+          ExploreButton(), // <<<--- Usamos nuestro widget refactorizado
+          SizedBox(height: 30),
+          StatisticsRow(),
+          SizedBox(height: 30),
+          Text('Quick Access', style: AppTextStyles.sectionTitle),
+          SizedBox(height: 16),
+          QuickAccessRow(),
+          SizedBox(height: 30),
+          Text('Popular Categories', style: AppTextStyles.sectionTitle),
+          SizedBox(height: 16),
+          PopularCategories(),
+          SizedBox(height: 30),
+          BottomCtaBanner(),
+          SizedBox(height: 100), // Espacio para que el contenido no quede pegado al BottomNavBar
         ],
       ),
     );
   }
 }
-

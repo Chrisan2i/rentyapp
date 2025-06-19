@@ -1,8 +1,10 @@
+// lib/features/product/widgets/product_list_section.dart
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:rentyapp/core/theme/app_colors.dart';
+import 'package:rentyapp/core/theme/app_colors.dart'; // Asumiendo ruta correcta
 import 'package:rentyapp/features/product/models/product_model.dart';
-import 'package:rentyapp/features/product/product_details/product_details_view.dart';
+import 'package:rentyapp/features/product/product_details/product_details_view.dart'; // Asumiendo ruta correcta
 import 'product_card.dart';
 
 class ProductListSection extends StatelessWidget {
@@ -19,24 +21,40 @@ class ProductListSection extends StatelessWidget {
     try {
       Query productsQuery = FirebaseFirestore.instance.collection('products').where('isAvailable', isEqualTo: true);
 
+      // Búsqueda por texto (requiere un índice en Firestore o un campo en minúsculas)
       if (query.isNotEmpty) {
-        // Debes tener un campo 'title_lowercase' en Firestore para que esta búsqueda sea eficiente.
         productsQuery = productsQuery
             .where('title_lowercase', isGreaterThanOrEqualTo: query.toLowerCase())
             .where('title_lowercase', isLessThanOrEqualTo: '${query.toLowerCase()}\uf8ff');
       }
 
+      // --- CORREGIDO AQUÍ ---
+      // Se ordena por el campo correcto en Firestore: 'rentalPrices.perDay'.
       if (activeFilters['sortBy'] == 'price_asc') {
-        productsQuery = productsQuery.orderBy('rentalPrices.day');
+        productsQuery = productsQuery.orderBy('rentalPrices.perDay');
       } else if (activeFilters['sortBy'] == 'price_desc') {
-        productsQuery = productsQuery.orderBy('rentalPrices.day', descending: true);
+        productsQuery = productsQuery.orderBy('rentalPrices.perDay', descending: true);
+      } else {
+        // Orden por defecto si no se especifica uno (ej. por fecha de creación)
+        productsQuery = productsQuery.orderBy('createdAt', descending: true);
       }
 
       final QuerySnapshot snapshot = await productsQuery.get();
-      return snapshot.docs.map((doc) => ProductModel.fromFirestore(doc)).toList();
+
+      // --- CORREGIDO AQUÍ ---
+      // Se utiliza el constructor factory correcto 'ProductModel.fromMap' que
+      // recibe el mapa de datos y el ID del documento.
+      return snapshot.docs.map((doc) {
+        // Hacemos un cast seguro de los datos a Map<String, dynamic>
+        final data = doc.data() as Map<String, dynamic>;
+        return ProductModel.fromMap(data, doc.id);
+      }).toList();
+
     } catch (e) {
+      // ignore: avoid_print
       print('❌ Error al obtener productos de Firestore: $e');
-      throw Exception('Failed to load products: $e');
+      // Es mejor relanzar una excepción más específica o manejarla aquí.
+      throw Exception('Failed to load products.');
     }
   }
 
@@ -60,7 +78,7 @@ class ProductListSection extends StatelessWidget {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2, crossAxisSpacing: 16.0, mainAxisSpacing: 16.0, childAspectRatio: 0.74,
+            crossAxisCount: 2, crossAxisSpacing: 16.0, mainAxisSpacing: 16.0, childAspectRatio: 0.68, // Ajustado para el nuevo layout
           ),
           itemCount: products.length,
           itemBuilder: (context, index) {
@@ -68,14 +86,15 @@ class ProductListSection extends StatelessWidget {
             return ProductCard(
               product: product,
               onViewProduct: () {
-                // Aquí ocurre la magia: navegamos a la pantalla de detalles
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => ProductDetailsScreen(product: product)),
                 );
               },
               onRentNow: () {
+                // ignore: avoid_print
                 print('Rent product: ${product.title}');
+                // Aquí podrías navegar a la pantalla de reserva pasando el producto.
               },
             );
           },

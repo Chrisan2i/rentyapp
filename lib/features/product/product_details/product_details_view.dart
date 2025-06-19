@@ -1,7 +1,9 @@
+// ARCHIVO: lib/features/product/product_details_view.dart
+
 import 'package:flutter/material.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
 import 'package:rentyapp/features/product/models/product_model.dart';
-
+import 'package:rentyapp/features/send_rental_request/send_rental_request_view.dart';
 
 import 'widgets/customer_reviews_section.dart';
 import 'widgets/location_card.dart';
@@ -9,13 +11,11 @@ import 'widgets/owner_info_card.dart';
 import 'widgets/product_header.dart';
 import 'widgets/product_image_gallery.dart';
 import 'widgets/rental_details_card.dart';
-import 'package:rentyapp/features/send_rental_request/send_rental_request_view.dart';
-
 
 class ProductDetailsScreen extends StatelessWidget {
   final ProductModel product;
 
-  const ProductDetailsScreen({Key? key, required this.product}) : super(key: key);
+  const ProductDetailsScreen({super.key, required this.product});
 
   @override
   Widget build(BuildContext context) {
@@ -28,8 +28,6 @@ class ProductDetailsScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: AppColors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Product Details', style: TextStyle(color: AppColors.white, fontSize: 18, fontWeight: FontWeight.w600)),
-        centerTitle: true,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
@@ -40,23 +38,31 @@ class ProductDetailsScreen extends StatelessWidget {
             const SizedBox(height: 24),
             ProductHeader(
               title: product.title,
-              pricePerDay: product.rentalPrices['day'] ?? 0.0,
+              pricePerDay: product.rentalPrices.perDay, // Esto ya era correcto
               rating: product.rating,
             ),
             const SizedBox(height: 16),
             Text(
               product.description,
-              style: TextStyle(color: AppColors.white.withOpacity(0.7), fontSize: 14, height: 1.5),
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.5),
             ),
             const SizedBox(height: 24),
-            OwnerInfoCard(ownerId: product.ownerId),
+            OwnerInfoCard(ownerInfo: product.ownerInfo), // Esto ya era correcto
             const SizedBox(height: 24),
             CustomerReviewsSection(
               productId: product.productId,
               totalReviews: product.totalReviews,
             ),
             const SizedBox(height: 24),
-            RentalDetailsCard(rentalDetails: product.rentalDetails),
+
+            // <<<--- AQUÍ ESTÁ LA CORRECCIÓN FINAL Y FUNCIONAL ---<<<
+            // Pasamos las propiedades que el widget actualizado necesita.
+            RentalDetailsCard(
+              prices: product.rentalPrices,
+              minimumRentalDays: product.minimumRentalDays,
+              depositAmount: product.depositAmount,
+            ),
+
             const SizedBox(height: 24),
             LocationCard(location: product.location),
           ],
@@ -66,15 +72,12 @@ class ProductDetailsScreen extends StatelessWidget {
     );
   }
 
-  /// Construye el botón de "Rent Now" en la parte inferior de la pantalla.
   Widget _buildRentNowButton(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
       color: AppColors.background,
       child: ElevatedButton(
         onPressed: () {
-          // --- CAMBIO AQUÍ ---
-          // Navega a la pantalla de solicitud de alquiler.
           Navigator.push(
             context,
             MaterialPageRoute(

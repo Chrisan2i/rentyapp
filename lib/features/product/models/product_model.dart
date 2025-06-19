@@ -1,195 +1,129 @@
+// lib/models/product_model.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+// Modelo anidado para precios
+class PricingDetails {
+  final double perDay;
+  final double? perWeek;
+  final double? perMonth;
+
+  PricingDetails({required this.perDay, this.perWeek, this.perMonth});
+
+  factory PricingDetails.fromMap(Map<String, dynamic> map) {
+    return PricingDetails(
+      perDay: (map['perDay'] as num?)?.toDouble() ?? 0.0,
+      perWeek: (map['perWeek'] as num?)?.toDouble(),
+      perMonth: (map['perMonth'] as num?)?.toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'perDay': perDay,
+      if (perWeek != null) 'perWeek': perWeek,
+      if (perMonth != null) 'perMonth': perMonth,
+    };
+  }
+}
 
 class ProductModel {
   final String productId;
-  final String ownerId;
   final String title;
   final String description;
   final String category;
-  final Map<String, double> rentalPrices;
   final List<String> images;
   final bool isAvailable;
+
+  // Precios y Reglas de Alquiler
+  final PricingDetails rentalPrices;
+  final double depositAmount;
+  final int minimumRentalDays;
+  final int maximumRentalDays;
+
+  // Disponibilidad y Ubicación
+  final List<Map<String, DateTime>> rentedPeriods;
+  final Map<String, dynamic> location;
+
+  // Información del Dueño (Denormalizada)
+  final String ownerId;
+  final Map<String, dynamic> ownerInfo;
+
+  // Reputación y Estadísticas
   final double rating;
   final int totalReviews;
-  final int views;
+
+  // Metadatos
   final DateTime createdAt;
   final DateTime updatedAt;
-  final Map<String, dynamic> location;
-  final Map<String, dynamic> rentalDetails;
 
   ProductModel({
     required this.productId,
-    required this.ownerId,
     required this.title,
     required this.description,
     required this.category,
-    required this.rentalPrices,
     required this.images,
     required this.isAvailable,
-    required this.rating,
-    required this.totalReviews,
-    required this.views,
+    required this.rentalPrices,
+    this.depositAmount = 0.0,
+    this.minimumRentalDays = 1,
+    this.maximumRentalDays = 90,
+    this.rentedPeriods = const [],
+    required this.location,
+    required this.ownerId,
+    required this.ownerInfo,
+    this.rating = 0.0,
+    this.totalReviews = 0,
     required this.createdAt,
     required this.updatedAt,
-    required this.location,
-    // --- AÑADIDO ---
-    // Se añade al constructor.
-    required this.rentalDetails,
   });
 
-  ProductModel.empty(String id) :
-        productId = id,
-        ownerId = '',
-        title = 'Producto no disponible',
-        description = '',
-        category = '',
-        rentalPrices = {},
-        images = [],
-        isAvailable = false,
-        rating = 0.0,
-        totalReviews = 0,
-        views = 0,
-        createdAt = DateTime.now(),
-        updatedAt = DateTime.now(),
-        location = {},
-        rentalDetails = {};
-
-  Map<String, dynamic> toJson() => {
-    'productId': productId,
-    'ownerId': ownerId,
-    'title': title,
-    'description': description,
-    'category': category,
-    'rentalPrices': rentalPrices,
-    'images': images,
-    'isAvailable': isAvailable,
-    'rating': rating,
-    'totalReviews': totalReviews,
-    'views': views,
-    'createdAt': createdAt.toIso8601String(),
-    'updatedAt': updatedAt.toIso8601String(),
-    'location': location,
-    'rentalDetails': rentalDetails,
-  };
-
-  factory ProductModel.fromJson(Map<String, dynamic> json) => ProductModel(
-    productId: json['productId'] as String? ?? '',
-    ownerId: json['ownerId'] as String? ?? '',
-    title: json['title'] as String? ?? 'Sin título',
-    description: json['description'] as String? ?? '',
-    category: json['category'] as String? ?? 'General',
-    rentalPrices: (json['rentalPrices'] as Map<String, dynamic>?)?.map((key, value) => MapEntry(key, _getDoubleFromDynamic(value))) ?? {},
-    images: List<String>.from(json['images'] as List<dynamic>? ?? []),
-    isAvailable: json['isAvailable'] as bool? ?? true,
-    rating: _getDoubleFromDynamic(json['rating']),
-    totalReviews: json['totalReviews'] as int? ?? 0,
-    views: json['views'] as int? ?? 0,
-    createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
-    updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ?? DateTime.now(),
-    location: Map<String, dynamic>.from(json['location'] as Map<String, dynamic>? ?? {}),
-    // --- AÑADIDO ---
-    // Se parsea desde JSON, con un valor por defecto seguro.
-    rentalDetails: Map<String, dynamic>.from(json['rentalDetails'] as Map<String, dynamic>? ?? {}),
-  );
-
-  ProductModel copyWith({
-    String? productId,
-    String? ownerId,
-    String? title,
-    String? description,
-    String? category,
-    Map<String, double>? rentalPrices,
-    List<String>? images,
-    bool? isAvailable,
-    double? rating,
-    int? totalReviews,
-    int? views,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-    Map<String, dynamic>? location,
-    Map<String, dynamic>? rentalDetails,
-  }) {
+  factory ProductModel.fromMap(Map<String, dynamic> map, String id) {
     return ProductModel(
-      productId: productId ?? this.productId,
-      ownerId: ownerId ?? this.ownerId,
-      title: title ?? this.title,
-      description: description ?? this.description,
-      category: category ?? this.category,
-      rentalPrices: rentalPrices ?? this.rentalPrices,
-      images: images ?? this.images,
-      isAvailable: isAvailable ?? this.isAvailable,
-      rating: rating ?? this.rating,
-      totalReviews: totalReviews ?? this.totalReviews,
-      views: views ?? this.views,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-      location: location ?? this.location,
-      // --- AÑADIDO ---
-      // Se asigna en la copia.
-      rentalDetails: rentalDetails ?? this.rentalDetails,
+      productId: id,
+      title: map['title'] ?? 'Sin título',
+      description: map['description'] ?? '',
+      category: map['category'] ?? 'General',
+      images: List<String>.from(map['images'] ?? []),
+      isAvailable: map['isAvailable'] ?? true,
+      rentalPrices: PricingDetails.fromMap(map['rentalPrices'] ?? {}),
+      depositAmount: (map['depositAmount'] as num?)?.toDouble() ?? 0.0,
+      minimumRentalDays: map['minimumRentalDays'] as int? ?? 1,
+      maximumRentalDays: map['maximumRentalDays'] as int? ?? 90,
+      rentedPeriods: (map['rentedPeriods'] as List<dynamic>? ?? []).map((p) {
+        return {
+          'start': (p['start'] as Timestamp).toDate(),
+          'end': (p['end'] as Timestamp).toDate(),
+        };
+      }).toList(),
+      location: Map<String, dynamic>.from(map['location'] ?? {}),
+      ownerId: map['ownerId'] ?? '',
+      ownerInfo: Map<String, dynamic>.from(map['ownerInfo'] ?? {}),
+      rating: (map['rating'] as num?)?.toDouble() ?? 0.0,
+      totalReviews: map['totalReviews'] as int? ?? 0,
+      createdAt: (map['createdAt'] as Timestamp).toDate(),
+      updatedAt: (map['updatedAt'] as Timestamp).toDate(),
     );
   }
 
-  factory ProductModel.fromFirestore(DocumentSnapshot doc) {
-    if (!doc.exists || doc.data() == null) {
-      return ProductModel.empty(doc.id);
-    }
-
-    final data = doc.data() as Map<String, dynamic>;
-
-    DateTime? parsedCreatedAt;
-    if (data['createdAt'] is Timestamp) {
-      parsedCreatedAt = (data['createdAt'] as Timestamp).toDate();
-    } else if (data['createdAt'] is String) {
-      parsedCreatedAt = DateTime.tryParse(data['createdAt']);
-    }
-
-    DateTime? parsedUpdatedAt;
-    if (data['updatedAt'] is Timestamp) {
-      parsedUpdatedAt = (data['updatedAt'] as Timestamp).toDate();
-    } else if (data['updatedAt'] is String) {
-      parsedUpdatedAt = DateTime.tryParse(data['updatedAt']);
-    }
-
-    Map<String, double> parsedRentalPrices = {};
-    if (data['rentalPrices'] is Map) {
-      (data['rentalPrices'] as Map).forEach((key, value) {
-        if (value is num) {
-          parsedRentalPrices[key.toString()] = value.toDouble();
-        }
-      });
-    }
-
-    Map<String, dynamic> parsedLocation = {};
-    if (data['location'] is Map) {
-      parsedLocation = Map<String, dynamic>.from(data['location']);
-    }
-
-    return ProductModel(
-      productId: data['productId'] as String? ?? doc.id,
-      ownerId: data['ownerId'] as String? ?? '',
-      title: data['title'] as String? ?? 'Producto Desconocido',
-      description: data['description'] as String? ?? '',
-      category: data['category'] as String? ?? 'Otros',
-      rentalPrices: parsedRentalPrices,
-      images: List<String>.from(data['images'] as List<dynamic>? ?? []),
-      isAvailable: data['isAvailable'] as bool? ?? true,
-      rating: _getDoubleFromDynamic(data['rating']),
-      totalReviews: data['totalReviews'] as int? ?? 0,
-      views: data['views'] as int? ?? 0,
-      createdAt: parsedCreatedAt ?? DateTime.now(),
-      updatedAt: parsedUpdatedAt ?? DateTime.now(),
-      location: parsedLocation,
-
-      rentalDetails: Map<String, dynamic>.from(data['rentalDetails'] as Map? ?? {}),
-    );
-  }
-
-  static double _getDoubleFromDynamic(dynamic value) {
-    if (value is num) {
-      return value.toDouble();
-    } else {
-      return 0.0;
-    }
+  Map<String, dynamic> toMap() {
+    return {
+      'title': title,
+      'description': description,
+      'category': category,
+      'images': images,
+      'isAvailable': isAvailable,
+      'rentalPrices': rentalPrices.toMap(),
+      'depositAmount': depositAmount,
+      'minimumRentalDays': minimumRentalDays,
+      'maximumRentalDays': maximumRentalDays,
+      'rentedPeriods': rentedPeriods,
+      'location': location,
+      'ownerId': ownerId,
+      'ownerInfo': ownerInfo,
+      'rating': rating,
+      'totalReviews': totalReviews,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+    };
   }
 }

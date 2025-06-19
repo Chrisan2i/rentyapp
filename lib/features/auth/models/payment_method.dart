@@ -1,43 +1,36 @@
-class PaymentMethod {
-  final String type; // 'binance', 'pagoMovil', 'transferencia'
-  final String? binanceUser;
-  final String? phoneNumber;
-  final String? idOrRif;
-  final String? bank;
-  final String? accountNumber;
+// lib/models/user/payment_method_model.dart
 
-  PaymentMethod({
+class PaymentMethodModel {
+  final String paymentMethodId;
+  final String alias;
+  final String type; // 'stripe_card'
+  final bool isDefault;
+  final Map<String, dynamic> providerDetails;
+
+  PaymentMethodModel({
+    required this.paymentMethodId,
+    required this.alias,
     required this.type,
-    this.binanceUser,
-    this.phoneNumber,
-    this.idOrRif,
-    this.bank,
-    this.accountNumber,
+    this.isDefault = false,
+    required this.providerDetails,
   });
 
-  factory PaymentMethod.fromMap(Map<String, dynamic> map) {
-    return PaymentMethod(
+  factory PaymentMethodModel.fromMap(Map<String, dynamic> map, String id) {
+    return PaymentMethodModel(
+      paymentMethodId: id,
+      alias: map['alias'] ?? '',
       type: map['type'] ?? '',
-      binanceUser: map['binanceUser'],
-      phoneNumber: map['phoneNumber'],
-      idOrRif: map['idOrRif'],
-      bank: map['bank'],
-      accountNumber: map['accountNumber'],
+      isDefault: map['isDefault'] ?? false,
+      providerDetails: Map<String, dynamic>.from(map['providerDetails'] ?? {}),
     );
   }
 
-  Map<String, dynamic> toMapBinance() => {
-    'binanceUser': binanceUser,
-  };
-
-  Map<String, dynamic> toMapPagoMovil() => {
-    'phoneNumber': phoneNumber,
-    'idOrRif': idOrRif,
-    'bank': bank,
-  };
-
-  Map<String, dynamic> toMapTransferencia() => {
-    'bank': bank,
-    'accountNumber': accountNumber,
-  };
+  Map<String, dynamic> toMap() {
+    return {
+      'alias': alias,
+      'type': type,
+      'isDefault': isDefault,
+      'providerDetails': providerDetails,
+    };
+  }
 }

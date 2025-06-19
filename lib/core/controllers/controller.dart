@@ -1,122 +1,158 @@
-// lib/core/controllers/controller.dart (o donde lo tengas)
+// ARCHIVO: lib/core/controllers/controller.dart
 
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' as auth; // Importante para el tipo 'User'
 import 'package:rentyapp/features/auth/models/user_model.dart';
 import 'package:rentyapp/features/rentals/models/rental_model.dart';
-// Importa tu servicio de alquiler si aún no lo has hecho
-import 'package:rentyapp/features/rentals/services/rental_services.dart'; // <-- ¡Asegúrate que la ruta es correcta!
+import 'package:rentyapp/features/auth/services/auth_service.dart';
+import 'package:rentyapp/features/rentals/services/rental_services.dart';
+import 'package:rentyapp/models/notification_service.dart';
 
-class Controller with ChangeNotifier {
-  int notificationCount = 1;
-  UserModel? currentUser;
-  bool isLoading = true;
-  List<RentalModel> rentals = [];
+enum ViewState { idle, loading, error }
 
-  // --- NUEVA ADICIÓN: Instancia del servicio de alquiler ---
-  final RentalService _rentalService = RentalService();
-  // --------------------------------------------------------
+/// Controlador principal de la aplicación. Orquesta los servicios y gestiona el estado global.
+class AppController with ChangeNotifier {
+  // --- DEPENDENCIAS ---
+  final AuthService _authService;
+  final RentalService _rentalService;
+  final NotificationService _notificationService;
 
-  Controller() {
-    loadCurrentUser();
-    loadRentals();
+  // --- ESTADO INTERNO ---
+  UserModel? _currentUser;
+  UserModel? get currentUser => _currentUser;
+
+  List<RentalModel> _rentals = [];
+  List<RentalModel> get rentals => _rentals;
+
+  ViewState _userState = ViewState.idle;
+  ViewState get userState => _userState;
+
+  ViewState _rentalsState = ViewState.idle;
+  ViewState get rentalsState => _rentalsState;
+
+  StreamSubscription<auth.User?>? _authSubscription;
+
+  // --- CONSTRUCTOR E INICIALIZACIÓN ---
+  AppController({
+    required AuthService authService,
+    required RentalService rentalService,
+    required NotificationService notificationService,
+  })  : _authService = authService,
+        _rentalService = rentalService,
+        _notificationService = notificationService {
+    _initialize();
   }
 
-  // --- NUEVA ADICIÓN: Stream para el contador de solicitudes ---
-  Stream<int> get pendingRequestsCountStream {
-    // Si no hay un usuario logueado, devolvemos un stream con valor 0 para evitar errores.
-    if (currentUser == null) {
-      return Stream.value(0);
-    }
-    // Usamos el servicio para obtener el stream de conteo en tiempo real.
-    return _rentalService.getPendingRentalRequestsCount(currentUser!.userId);
+  void _initialize() {
+    _authSubscription?.cancel();
+    _authSubscription = _authService.authStateChanges.listen(_onAuthStateChanged);
   }
-  // -------------------------------------------------------------
 
-  Future<void> loadCurrentUser() async {
-    // Tu método se mantiene igual, está perfecto.
-    try {
-      final authUser = FirebaseAuth.instance.currentUser;
-      if (authUser == null) {
-        print('⚠️ No hay sesión iniciada.');
-        isLoading = false;
-        notifyListeners();
-        return;
-      }
-
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(authUser.uid)
-          .get();
-
-      if (userDoc.exists) {
-        currentUser = UserModel.fromMap(userDoc.data()!);
-      } else {
-        print('⚠️ Usuario no encontrado en Firestore.');
-      }
-    } catch (e) {
-      print('❌ Error al cargar usuario: $e');
+  /// Se ejecuta cuando el estado de autenticación del usuario cambia.
+  Future<void> _onAuthStateChanged(auth.User? firebaseUser) async {
+    if (firebaseUser != null) {
+      // Si el usuario de Firebase existe, usamos su UID para cargar nuestros datos.
+      await loadCurrentUser(firebaseUser.uid);
+    } else {
+      // Si es nulo, el usuario ha cerrado sesión.
+      _clearUserState();
     }
+  }
 
-    isLoading = false;
+  void _clearUserState() {
+    _currentUser = null;
+    _rentals = [];
+    _userState = ViewState.idle;
+    _rentalsState = ViewState.idle;
     notifyListeners();
   }
 
-  Future<void> loadRentals() async {
-    // Tu método se mantiene igual.
-    try {
-      final rentalQuerySnapshot = await FirebaseFirestore.instance
-          .collection('rentals')
-          .get();
+  // --- STREAMS ---
+  Stream<int> get pendingRequestsCountStream =>
+      _currentUser != null ? _rentalService.getPendingRentalRequestsCount(_currentUser!.userId) : Stream.value(0);
 
-      rentals = rentalQuerySnapshot.docs.map((doc) {
-        return RentalModel.fromJson(doc.data());
-      }).toList();
-      notifyListeners();
+  Stream<int> get unreadNotificationsCountStream =>
+      _currentUser != null ? _notificationService.getUnreadNotificationsCount(_currentUser!.userId) : Stream.value(0);
+
+  // --- MÉTODOS ---
+  Future<void> loadCurrentUser(String uid) async {
+    _setLoadingState(user: ViewState.loading);
+    try {
+      _currentUser = await _authService.getUserData(uid);
+      if (_currentUser != null) {
+        await loadUserRentals();
+        _setLoadingState(user: ViewState.idle);
+      } else {
+        _setLoadingState(user: ViewState.error);
+      }
     } catch (e) {
-      print('❌ Error al cargar alquileres: $e');
+      debugPrint('❌ Error al cargar datos del usuario: $e');
+      _setLoadingState(user: ViewState.error);
+    }
+  }
+
+  Future<void> loadUserRentals() async {
+    if (_currentUser == null) return;
+    _setLoadingState(rentals: ViewState.loading);
+    try {
+      _rentals = await _rentalService.getRentalsForUser(_currentUser!.userId);
+      _setLoadingState(rentals: ViewState.idle);
+    } catch (e) {
+      debugPrint('❌ Error al cargar alquileres del usuario: $e');
+      _setLoadingState(rentals: ViewState.error);
     }
   }
 
   Future<void> updateUserProfile(Map<String, dynamic> newData) async {
-    // Tu método se mantiene igual.
-    if (currentUser == null) return;
-
+    if (_currentUser == null) throw Exception("Usuario no autenticado.");
     try {
-      final userId = currentUser!.userId;
-      await FirebaseFirestore.instance.collection('users').doc(userId).update(newData);
-
-      // Recargamos el usuario desde Firestore para tener la versión más actualizada
-      // Es más seguro que reconstruirlo manualmente.
-      await loadCurrentUser();
-
+      await _authService.updateUserProfile(_currentUser!.userId, newData);
+      await loadCurrentUser(_currentUser!.userId);
     } catch (e) {
-      print('❌ Error al actualizar perfil: $e');
+      debugPrint('❌ Error al actualizar perfil: $e');
       rethrow;
     }
   }
 
-  void onExplorePressed(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Start Exploring tapped!')),
-    );
+  Future<void> clearAllNotifications() async {
+    if (_currentUser == null) return;
+    try {
+      await _notificationService.markAllAsRead(_currentUser!.userId);
+    } catch (e) {
+      debugPrint("❌ Error al limpiar notificaciones: $e");
+    }
   }
 
-  int selectedIndex = 0;
+  void _setLoadingState({ViewState? user, ViewState? rentals}) {
+    bool needsNotify = false;
+    if (user != null && _userState != user) {
+      _userState = user;
+      needsNotify = true;
+    }
+    if (rentals != null && _rentalsState != rentals) {
+      _rentalsState = rentals;
+      needsNotify = true;
+    }
+    if (needsNotify) {
+      notifyListeners();
+    }
+  }
+
+  // --- UI ---
+  int _selectedIndex = 0;
+  int get selectedIndex => _selectedIndex;
 
   void setSelectedIndex(int index) {
-    selectedIndex = index;
-    notifyListeners();
+    if (_selectedIndex != index) {
+      _selectedIndex = index;
+      notifyListeners();
+    }
   }
 
-  void clearNotifications() {
-    notificationCount = 0;
-    notifyListeners();
-  }
-
-  void receiveNotification() {
-    notificationCount++;
-    notifyListeners();
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
   }
 }

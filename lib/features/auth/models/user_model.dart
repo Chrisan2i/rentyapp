@@ -1,116 +1,113 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'address_model.dart';
-import 'identity_verification.dart';
-import 'user_preferences.dart';
-import 'payment_method.dart'; // Asegúrate de importar esto
+
+enum VerificationStatus {
+  notVerified,
+  level1_basic,
+  level2_plus,
+}
 
 class UserModel {
+  // --- Identificación ---
   final String userId;
   final String fullName;
   final String username;
   final String email;
-  final String phone;
+  final String? phone;
   final String profileImageUrl;
+
+  // --- Reputación y Estadísticas ---
+  final double rating;
+  final int totalReviews;
+  final int totalRentsAsRenter;
+  final int totalRentsAsOwner;
+
+  // --- Billetera Interna (Wallet) ---
+  final Map<String, double> wallet;
+
+  // --- Estado, Rol y Verificación (Resumen) ---
+  final String status;
   final String role;
+  final VerificationStatus verificationStatus;
+
+  // --- Moderación ---
+  final int reportsReceived;
+  final String? banReason;
+  final String? adminNotes;
+
+  // --- Metadatos ---
   final DateTime createdAt;
   final DateTime lastLoginAt;
-
-  final int rating;
-  final int totalRentsMade;
-  final int totalRentsReceived;
-
-  final bool blocked;
-  final String? banReason;
-  final int reports;
-  final String? notesByAdmin;
-
-  final bool verified;
-  final AddressModel? address;
-  final IdentityVerification? identityVerification;
-  final UserPreferences? preferences;
-  final Map<String, Map<String, dynamic>> paymentMethods;
 
   UserModel({
     required this.userId,
     required this.fullName,
     required this.username,
     required this.email,
-    required this.phone,
+    this.phone,
     required this.profileImageUrl,
-    required this.role,
+    this.rating = 0.0,
+    this.totalReviews = 0,
+    this.totalRentsAsRenter = 0,
+    this.totalRentsAsOwner = 0,
+    this.wallet = const {'available': 0.0, 'pending': 0.0},
+    this.status = 'active',
+    this.role = 'user',
+    this.verificationStatus = VerificationStatus.notVerified,
+    this.reportsReceived = 0,
+    this.banReason,
+    this.adminNotes,
     required this.createdAt,
     required this.lastLoginAt,
-    required this.rating,
-    required this.totalRentsMade,
-    required this.totalRentsReceived,
-    required this.blocked,
-    this.banReason,
-    required this.reports,
-    this.notesByAdmin,
-    this.verified = false,
-    this.address,
-    this.identityVerification,
-    this.preferences,
-    this.paymentMethods = const {},
   });
 
-  factory UserModel.fromMap(Map<String, dynamic> map) {
+  factory UserModel.fromMap(Map<String, dynamic> map, String id) {
     return UserModel(
-      userId: map['userId'] ?? '',
+      userId: id,
       fullName: map['fullName'] ?? '',
       username: map['username'] ?? '',
       email: map['email'] ?? '',
-      phone: map['phone'] ?? '',
-      profileImageUrl: map['profileImageUrl'] ?? '',
+      phone: map['phone'],
+      profileImageUrl: map['profileImageUrl'] ?? 'https://via.placeholder.com/150',
+      rating: (map['rating'] as num?)?.toDouble() ?? 0.0,
+      totalReviews: map['totalReviews'] as int? ?? 0,
+      totalRentsAsRenter: map['totalRentsAsRenter'] as int? ?? 0,
+      totalRentsAsOwner: map['totalRentsAsOwner'] as int? ?? 0,
+      wallet: (map['wallet'] as Map<String, dynamic>? ?? {'available': 0.0, 'pending': 0.0})
+          .map((key, value) => MapEntry(key, (value as num).toDouble())),
+      status: map['status'] ?? 'active',
       role: map['role'] ?? 'user',
-      createdAt: (map['createdAt'] as Timestamp).toDate(),
-      lastLoginAt: (map['lastLoginAt'] as Timestamp).toDate(),
-      rating: map['rating'] ?? 0,
-      totalRentsMade: map['totalRentsMade'] ?? 0,
-      totalRentsReceived: map['totalRentsReceived'] ?? 0,
-      blocked: map['blocked'] ?? false,
+      verificationStatus: VerificationStatus.values.firstWhere(
+            (e) => e.name == map['verificationStatus'],
+        orElse: () => VerificationStatus.notVerified,
+      ),
+      reportsReceived: map['reportsReceived'] as int? ?? 0,
       banReason: map['banReason'],
-      reports: map['reports'] ?? 0,
-      notesByAdmin: map['notesByAdmin'],
-      verified: map['verified'] ?? false,
-      address: map['address'] != null ? AddressModel.fromMap(map['address']) : null,
-      identityVerification: map['identityVerification'] != null
-          ? IdentityVerification.fromMap(map['identityVerification'])
-          : null,
-      preferences: map['preferences'] != null
-          ? UserPreferences.fromMap(map['preferences'])
-          : null,
-      paymentMethods: map['paymentMethods'] != null
-          ? Map<String, Map<String, dynamic>>.from(
-          (map['paymentMethods'] as Map).map((key, value) =>
-              MapEntry(key.toString(), Map<String, dynamic>.from(value))))
-          : {},
+      adminNotes: map['adminNotes'],
+      createdAt: (map['createdAt'] as Timestamp? ?? Timestamp.now()).toDate(),
+      lastLoginAt: (map['lastLoginAt'] as Timestamp? ?? Timestamp.now()).toDate(),
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'userId': userId,
       'fullName': fullName,
       'username': username,
       'email': email,
       'phone': phone,
       'profileImageUrl': profileImageUrl,
+      'rating': rating,
+      'totalReviews': totalReviews,
+      'totalRentsAsRenter': totalRentsAsRenter,
+      'totalRentsAsOwner': totalRentsAsOwner,
+      'wallet': wallet,
+      'status': status,
       'role': role,
+      'verificationStatus': verificationStatus.name,
+      'reportsReceived': reportsReceived,
+      'banReason': banReason,
+      'adminNotes': adminNotes,
       'createdAt': createdAt,
       'lastLoginAt': lastLoginAt,
-      'rating': rating,
-      'totalRentsMade': totalRentsMade,
-      'totalRentsReceived': totalRentsReceived,
-      'blocked': blocked,
-      'banReason': banReason,
-      'reports': reports,
-      'notesByAdmin': notesByAdmin,
-      'verified': verified,
-      'address': address?.toMap(),
-      'preferences': preferences?.toMap(),
-      'paymentMethods': paymentMethods,
-      // ⚠️ identityVerification se guarda por separado
     };
   }
 }

@@ -4,9 +4,45 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:rentyapp/features/rentals/models/rental_model.dart';
 
+// --- Extensión para el Enum RentalStatus ---
+// Añade propiedades personalizadas para la UI sin modificar el modelo.
+// Esto centraliza la lógica de visualización del estado.
+extension RentalStatusExtension on RentalStatus {
+  String get displayName {
+    switch (this) {
+      case RentalStatus.awaiting_delivery:
+        return 'Awaiting Delivery';
+      case RentalStatus.ongoing:
+        return 'Ongoing';
+      case RentalStatus.completed:
+        return 'Completed';
+      case RentalStatus.cancelled:
+        return 'Cancelled';
+      case RentalStatus.disputed:
+        return 'Disputed';
+    }
+  }
+
+  Color get displayColor {
+    switch (this) {
+      case RentalStatus.awaiting_delivery:
+        return Colors.orange.shade700; // Naranja para estados pendientes
+      case RentalStatus.ongoing:
+        return const Color(0xFF0A84FF); // Azul para en curso
+      case RentalStatus.completed:
+        return const Color(0xFF34C759); // Verde para completado
+      case RentalStatus.cancelled:
+        return Colors.grey.shade600;    // Gris para cancelado
+      case RentalStatus.disputed:
+        return const Color(0xFFFF3B30); // Rojo para disputas
+    }
+  }
+}
+
+
 class RentalCardWidget extends StatelessWidget {
   final RentalModel rental;
-  final String currentTab;
+  final String currentTab; // 'renter' o 'owner'
 
   const RentalCardWidget({
     Key? key,
@@ -19,7 +55,7 @@ class RentalCardWidget extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
-        color: const Color(0xFF2C2C2E), // Color de la tarjeta como en la imagen
+        color: const Color(0xFF2C2C2E), // Color de la tarjeta
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -36,10 +72,14 @@ class RentalCardWidget extends StatelessWidget {
   }
 
   Widget _buildItemImage() {
+    // CORREGIDO: Acceso a la URL de la imagen y al título desde el mapa 'productInfo'.
+    final imageUrl = rental.productInfo['imageUrl'] as String?;
+    final title = rental.productInfo['title'] as String? ?? 'N/A';
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(12.0),
       child: Image.network(
-        rental.itemImageUrl,
+        imageUrl ?? '', // Se pasa un string vacío para forzar el errorBuilder si la URL es nula.
         width: 72,
         height: 72,
         fit: BoxFit.cover,
@@ -62,7 +102,7 @@ class RentalCardWidget extends StatelessWidget {
             ),
             child: Center(
               child: Text(
-                rental.itemName.length > 4 ? rental.itemName.substring(0, 4) : rental.itemName,
+                title.length > 4 ? title.substring(0, 4) : title,
                 style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 14),
                 textAlign: TextAlign.center,
               ),
@@ -74,21 +114,30 @@ class RentalCardWidget extends StatelessWidget {
   }
 
   Widget _buildInfoColumn() {
-    final isOngoing = rental.status == RentalStatus.ongoing || rental.status == RentalStatus.late;
+    // CORREGIDO: Se ajustó el estado "en curso" según el enum del modelo.
+    final isOngoing = rental.status == RentalStatus.ongoing || rental.status == RentalStatus.awaiting_delivery;
     final datePrefix = isOngoing ? 'Due: ' : 'Completed: ';
     final formattedDate = DateFormat('MMM dd').format(rental.endDate);
+
+    // CORREGIDO: Acceso a los nombres desde los mapas 'ownerInfo' y 'renterInfo'.
+    final ownerName = rental.ownerInfo['fullName'] as String? ?? 'Owner';
+    final renterName = rental.renterInfo['fullName'] as String? ?? 'Renter';
     final relationshipText = currentTab == 'renter'
-        ? 'You rented from ${rental.ownerName}'
-        : 'Rented by ${rental.renterName}';
+        ? 'You rented from $ownerName'
+        : 'Rented by $renterName';
+
+    // CORREGIDO: Acceso al título y al precio total desde 'productInfo' y 'financials'.
+    final itemTitle = rental.productInfo['title'] as String? ?? 'Untitled Product';
+    final total = rental.financials['total'] ?? 0.0;
 
     return SizedBox(
       height: 72,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            rental.itemName,
+            itemTitle,
             style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -97,7 +146,13 @@ class RentalCardWidget extends StatelessWidget {
             children: [
               Icon(Icons.person_outline, color: Colors.grey.shade500, size: 14),
               const SizedBox(width: 4),
-              Text(relationshipText, style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+              Expanded( // Expanded para evitar overflow si los nombres son largos
+                child: Text(
+                  relationshipText,
+                  style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
           Row(
@@ -108,7 +163,7 @@ class RentalCardWidget extends StatelessWidget {
             ],
           ),
           Text(
-            '\$${rental.totalPrice.toInt()} total',
+            '\$${total.toInt()} total',
             style: const TextStyle(color: Color(0xFF0A84FF), fontSize: 15, fontWeight: FontWeight.bold),
           ),
         ],
@@ -117,7 +172,6 @@ class RentalCardWidget extends StatelessWidget {
   }
 
   Widget _buildActionsColumn(BuildContext context) {
-
     return SizedBox(
       width: 105,
       height: 72,
@@ -133,6 +187,7 @@ class RentalCardWidget extends StatelessWidget {
   }
 
   Widget _buildStatusTag() {
+    // CORREGIDO: Uso de la extensión para obtener color y texto del estado.
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -147,42 +202,35 @@ class RentalCardWidget extends StatelessWidget {
   }
 
   List<Widget> _buildActionButtons(BuildContext context) {
-    final bool isOngoing = rental.status == RentalStatus.ongoing || rental.status == RentalStatus.late;
+    // CORREGIDO: El estado 'late' no existe, se ajustó a los estados del modelo.
+    final bool isOngoing = rental.status == RentalStatus.ongoing || rental.status == RentalStatus.awaiting_delivery;
 
+    // La lógica de los botones ya usaba campos correctos del modelo (reviewedByRenter/Owner).
     if (currentTab == 'renter') {
       if (isOngoing) {
         return [
-          _buildActionButton(text: 'Contact Owner', onPressed: () {}, context: context),
-          const SizedBox(height: 4),
-          _buildActionButton(text: 'View Details', onPressed: () {}, context: context, isSecondary: true),
+          _buildActionButton(text: 'View Details', onPressed: () {}, context: context),
         ];
-      } else { // Past
-        if (rental.reviewedByRenter) {
-          return [_buildActionButton(text: 'Review Left', onPressed: null, context: context)];
-        } else {
+      } else { // Pasado (Completed, Cancelled, Disputed)
+        if (rental.status == RentalStatus.completed && !rental.reviewedByRenter) {
           return [_buildActionButton(text: 'Leave Review', onPressed: () {}, context: context, color: const Color(0xFF34C759))];
+        } else {
+          return [_buildActionButton(text: 'View Details', onPressed: () {}, context: context, isSecondary: true)];
         }
       }
     } else { // Owner
       if (isOngoing) {
         return [
-          _buildActionButton(text: 'Contact Renter', onPressed: () {}, context: context),
-          const SizedBox(height: 4),
-          _buildActionButton(text: 'View Details', onPressed: () {}, context: context, isSecondary: true),
+          _buildActionButton(text: 'View Details', onPressed: () {}, context: context),
         ];
-      } else { // Past
-        if (rental.reviewedByOwner) {
+      } else { // Pasado
+        // Los dueños pueden reportar problemas incluso después de completado.
+        if(rental.status == RentalStatus.completed || rental.status == RentalStatus.disputed) {
           return [
-            _buildActionButton(text: 'View Review', onPressed: () {}, context: context, color: const Color(0xFF0A84FF)),
-            const SizedBox(height: 4),
             _buildActionButton(text: 'Report Issue', onPressed: () {}, context: context, color: const Color(0xFFFF3B30)),
           ];
         } else {
-          return [
-            _buildActionButton(text: 'No Review', onPressed: null, context: context),
-            const SizedBox(height: 4),
-            _buildActionButton(text: 'Report Issue', onPressed: () {}, context: context, color: const Color(0xFFFF3B30)),
-          ];
+          return [_buildActionButton(text: 'View Details', onPressed: () {}, context: context, isSecondary: true)];
         }
       }
     }

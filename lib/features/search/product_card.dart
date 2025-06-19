@@ -1,6 +1,8 @@
+// lib/features/product/widgets/product_card.dart
+
 import 'package:flutter/material.dart';
 import 'package:rentyapp/features/product/models/product_model.dart';
-import 'package:rentyapp/core/theme/app_colors.dart';
+import 'package:rentyapp/core/theme/app_colors.dart'; // Asumiendo que esta ruta es correcta
 
 class ProductCard extends StatelessWidget {
   final ProductModel product;
@@ -16,13 +18,13 @@ class ProductCard extends StatelessWidget {
 
   Widget _buildImagePlaceholder() {
     return Container(
-      color: Colors.white,
+      color: Colors.white10,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.camera_alt_outlined, color: Colors.grey[400], size: 30),
+          Icon(Icons.camera_alt_outlined, color: Colors.grey[600], size: 30),
           const SizedBox(height: 4),
-          const Text('No Photos', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF666666), fontSize: 10)),
+          const Text('No Photo', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF8E8E93), fontSize: 10)),
         ],
       ),
     );
@@ -55,9 +57,10 @@ class ProductCard extends StatelessWidget {
                       : _buildImagePlaceholder(),
                 ),
               ),
-              const SizedBox(height: 6),
-              Expanded(
-                flex: 2,
+              const SizedBox(height: 8),
+              // El `flex` aquí no es necesario si no hay otro Expanded en la Column
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -65,23 +68,32 @@ class ProductCard extends StatelessWidget {
                     Text(product.title, style: const TextStyle(color: AppColors.white, fontSize: 14, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 4),
                     Text(
-                      '${product.location['city'] ?? 'Ciudad'}, ${product.location['neighborhood'] ?? 'Área'}',
+                      '${product.location['city'] ?? 'City'}, ${product.location['neighborhood'] ?? 'Area'}',
                       style: TextStyle(color: AppColors.white.withOpacity(0.6), fontSize: 10), maxLines: 1, overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
+                    // --- CORREGIDO AQUÍ ---
+                    // Se accede a la propiedad 'perDay' del objeto 'rentalPrices', no a una clave de mapa.
                     Text(
-                      '\$${product.rentalPrices['day']?.toStringAsFixed(2) ?? 'N/A'} /day',
+                      '\$${product.rentalPrices.perDay.toStringAsFixed(0)} /day',
                       style: const TextStyle(color: AppColors.primary, fontSize: 16, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
+              const Spacer(), // Usa un Spacer para empujar el botón hacia abajo
               Padding(
                 padding: const EdgeInsets.only(top: 6.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(product.rating.toStringAsFixed(1), style: const TextStyle(color: AppColors.white, fontSize: 12, fontWeight: FontWeight.w400)),
+                    Row(
+                      children: [
+                        const Icon(Icons.star, color: Colors.amber, size: 14),
+                        const SizedBox(width: 4),
+                        Text(product.rating.toStringAsFixed(1), style: const TextStyle(color: AppColors.white, fontSize: 12, fontWeight: FontWeight.w400)),
+                      ],
+                    ),
                     _buildRentButton(onRentNow),
                   ],
                 ),

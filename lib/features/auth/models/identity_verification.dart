@@ -1,49 +1,68 @@
+// lib/models/user/identity_verification_model.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'user_model.dart'; // Asegúrate que la ruta sea correcta
 
-class IdentityVerification {
-  final String? frontImageUrl;
-  final String? backImageUrl;
-  final String? selfieWithIdUrl;
+enum VerificationRequestStatus { pending, approved, rejected }
+
+class IdentityVerificationModel {
+  final String verificationId;
+  final VerificationStatus requestedLevel;
+  final VerificationRequestStatus status;
+
+  final String idFrontImageUrl;
+  final String idSelfieImageUrl;
   final String? residenceProofUrl;
-  final String status; // under_review, approved, rejected
-  final DateTime? submittedAt;
-  final DateTime? verifiedAt;
-  final String? verifiedBy;
 
-  IdentityVerification({
-    this.frontImageUrl,
-    this.backImageUrl,
-    this.selfieWithIdUrl,
-    this.residenceProofUrl,
+  final String? rejectionReason;
+  final DateTime submittedAt;
+  final DateTime? reviewedAt;
+  final String? reviewedBy; // Admin ID
+
+  IdentityVerificationModel({
+    required this.verificationId,
+    required this.requestedLevel,
     required this.status,
-    this.submittedAt,
-    this.verifiedAt,
-    this.verifiedBy,
+    required this.idFrontImageUrl,
+    required this.idSelfieImageUrl,
+    this.residenceProofUrl,
+    this.rejectionReason,
+    required this.submittedAt,
+    this.reviewedAt,
+    this.reviewedBy,
   });
 
-  factory IdentityVerification.fromMap(Map<String, dynamic> map) {
-    return IdentityVerification(
-      frontImageUrl: map['frontImageUrl'],
-      backImageUrl: map['backImageUrl'],
-      selfieWithIdUrl: map['selfieWithIdUrl'],
+  factory IdentityVerificationModel.fromMap(Map<String, dynamic> map, String id) {
+    return IdentityVerificationModel(
+      verificationId: id,
+      requestedLevel: VerificationStatus.values.firstWhere(
+            (e) => e.name == map['requestedLevel'],
+        orElse: () => VerificationStatus.notVerified,
+      ),
+      status: VerificationRequestStatus.values.firstWhere(
+            (e) => e.name == map['status'],
+        orElse: () => VerificationRequestStatus.pending,
+      ),
+      idFrontImageUrl: map['idFrontImageUrl'] ?? '',
+      idSelfieImageUrl: map['idSelfieImageUrl'] ?? '',
       residenceProofUrl: map['residenceProofUrl'],
-      status: map['status'] ?? 'under_review',
-      submittedAt: (map['submittedAt'] as Timestamp?)?.toDate(),
-      verifiedAt: (map['verifiedAt'] as Timestamp?)?.toDate(),
-      verifiedBy: map['verifiedBy'],
+      rejectionReason: map['rejectionReason'],
+      submittedAt: (map['submittedAt'] as Timestamp).toDate(),
+      reviewedAt: (map['reviewedAt'] as Timestamp?)?.toDate(),
+      reviewedBy: map['reviewedBy'],
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'frontImageUrl': frontImageUrl,
-      'backImageUrl': backImageUrl,
-      'selfieWithIdUrl': selfieWithIdUrl,
+      'requestedLevel': requestedLevel.name,
+      'status': status.name,
+      'idFrontImageUrl': idFrontImageUrl,
+      'idSelfieImageUrl': idSelfieImageUrl,
       'residenceProofUrl': residenceProofUrl,
-      'status': status,
+      'rejectionReason': rejectionReason,
       'submittedAt': submittedAt,
-      'verifiedAt': verifiedAt,
-      'verifiedBy': verifiedBy,
+      'reviewedAt': reviewedAt,
+      'reviewedBy': reviewedBy,
     };
   }
 }

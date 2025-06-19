@@ -1,4 +1,4 @@
-// En lib/features/profile/widgets/profile_info_cards.dart
+// ARCHIVO: lib/features/profile/widgets/profile_info_cards.dart
 
 import 'package:flutter/material.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
@@ -7,63 +7,54 @@ import 'package:rentyapp/features/auth/models/user_model.dart';
 
 class ProfileInfoCards extends StatelessWidget {
   final UserModel user;
-  final int pendingRequestsCount; // <-- Nuevo parámetro para el conteo
+  final int pendingRequestsCount;
 
   const ProfileInfoCards({
     super.key,
     required this.user,
-    required this.pendingRequestsCount, // <-- Requerido en el constructor
+    required this.pendingRequestsCount,
   });
 
   @override
   Widget build(BuildContext context) {
+    // <<<--- CORRECCIÓN: Se comprueba el estado de verificación con el enum ---<<<
+    final bool isVerified = user.verificationStatus != VerificationStatus.notVerified;
+
     return Wrap(
       spacing: 16,
       runSpacing: 16,
-      alignment: WrapAlignment.center, // Centra las tarjetas si no llenan el espacio
+      alignment: WrapAlignment.center,
       children: [
         _buildInfoCard(
           context: context,
           title: 'My Listings',
-          subtitle: '${user.totalRentsReceived} items',
-          onTap: () {
-            // TODO: Navegar a la vista de "My Listings"
-            // Navigator.pushNamed(context, '/my-listings');
-          },
+          // <<<--- CORRECCIÓN: Se usa 'totalRentsAsOwner' del modelo ---<<<
+          subtitle: '${user.totalRentsAsOwner} items',
+          onTap: () { /* TODO: Navegar a My Listings */ },
         ),
         _buildInfoCard(
           context: context,
           title: 'Rentals Requests',
-          subtitle: '$pendingRequestsCount requests', // <-- Usamos el conteo en vivo
-          onTap: () {
-            // Navega a la vista de solicitudes de alquiler
-            Navigator.pushNamed(context, '/rent-requests');
-          },
+          subtitle: '$pendingRequestsCount requests',
+          onTap: () { /* TODO: Navegar a Rent Requests */ },
         ),
         _buildInfoCard(
           context: context,
           title: 'Favorites',
-          subtitle: '8 saved',
-          onTap: () {
-            // TODO: Navegar a la vista de "Favorites"
-            // Navigator.pushNamed(context, '/favorites');
-          },
+          subtitle: '8 saved', // TODO: Conectar a datos reales si existen
+          onTap: () { /* TODO: Navegar a Favorites */ },
         ),
         _buildInfoCard(
           context: context,
           title: 'Verification',
-          subtitle: user.verified ? 'Complete' : 'Pending',
-          highlight: user.verified,
-          onTap: () {
-            // TODO: Navegar a la vista de "Verification"
-            // Navigator.pushNamed(context, '/verification');
-          },
+          subtitle: isVerified ? 'Complete' : 'Pending',
+          highlight: isVerified,
+          onTap: () { /* TODO: Navegar a Verification */ },
         ),
       ],
     );
   }
 
-  // El método ahora recibe un `onTap` y el `BuildContext`
   Widget _buildInfoCard({
     required BuildContext context,
     required String title,
