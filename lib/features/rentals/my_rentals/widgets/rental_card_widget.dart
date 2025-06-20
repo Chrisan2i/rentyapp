@@ -4,9 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:rentyapp/features/rentals/models/rental_model.dart';
 
-// NO MÁS IMPORTS DE NAVEGACIÓN O PANTALLAS ESPECÍFICAS AQUÍ.
-
-// --- Extensión para el Enum RentalStatus (Sin cambios) ---
+// --- Extensión para el Enum RentalStatus ---
 extension RentalStatusExtension on RentalStatus {
   String get displayName {
     switch (this) {
@@ -46,24 +44,20 @@ extension RentalStatusExtension on RentalStatus {
 class RentalCardWidget extends StatelessWidget {
   final RentalModel rental;
   final String currentTab;
-
-  // --- ¡NUEVO! CALLBACK PARA "PAY NOW" ---
-  // Este es el único cambio significativo en la declaración de la clase.
-  // Es una función que será proporcionada por el widget padre (RentalView).
   final Function(RentalModel rental) onPayNowPressed;
 
   const RentalCardWidget({
     Key? key,
     required this.rental,
     required this.currentTab,
-    required this.onPayNowPressed, // Lo hacemos un parámetro requerido.
+    required this.onPayNowPressed,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12.0),
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      margin: const EdgeInsets.symmetric(vertical: 4.0), // Reducido el margen vertical
       decoration: BoxDecoration(
         color: const Color(0xFF2C2C2E),
         borderRadius: BorderRadius.circular(16),
@@ -81,7 +75,6 @@ class RentalCardWidget extends StatelessWidget {
     );
   }
 
-  // --- _buildItemImage y _buildFallbackImage (Sin cambios) ---
   Widget _buildItemImage() {
     final imageUrl = rental.productInfo['imageUrl'] as String?;
     final title = rental.productInfo['title'] as String? ?? 'N/A';
@@ -135,7 +128,6 @@ class RentalCardWidget extends StatelessWidget {
     );
   }
 
-  // --- _buildInfoColumn, _buildActionsColumn, _buildStatusTag (Sin cambios) ---
   Widget _buildInfoColumn() {
     final isOngoing = rental.status == RentalStatus.ongoing ||
         rental.status == RentalStatus.awaiting_delivery;
@@ -226,7 +218,6 @@ class RentalCardWidget extends StatelessWidget {
     );
   }
 
-  // --- ¡AQUÍ ESTÁ EL CAMBIO IMPORTANTE! ---
   List<Widget> _buildActionButtons(BuildContext context) {
     final bool isOngoingOrDelivering = rental.status == RentalStatus.ongoing ||
         rental.status == RentalStatus.awaiting_delivery;
@@ -237,8 +228,6 @@ class RentalCardWidget extends StatelessWidget {
           _buildActionButton(
             text: 'Pay Now',
             onPressed: () {
-              // En lugar de hacer la lógica aquí, simplemente se la delegamos
-              // al padre a través del callback que nos proporcionó.
               onPayNowPressed(rental);
             },
             context: context,
@@ -251,19 +240,17 @@ class RentalCardWidget extends StatelessWidget {
           _buildActionButton(
             text: 'View Details',
             onPressed: () {
-              print('ACTION: View Details (Renter) for rental ID: ${rental.rentalId}');
               // TODO: Navegar a la pantalla de detalles del alquiler.
             },
             context: context,
           ),
         ];
-      } else { // Alquiler Pasado (Completed, Cancelled, Disputed)
+      } else {
         if (rental.status == RentalStatus.completed && !rental.reviewedByRenter) {
           return [
             _buildActionButton(
               text: 'Leave Review',
               onPressed: () {
-                print('ACTION: Leave Review for rental ID: ${rental.rentalId}');
                 // TODO: Navegar a la pantalla para dejar una reseña.
               },
               context: context,
@@ -274,9 +261,7 @@ class RentalCardWidget extends StatelessWidget {
           return [
             _buildActionButton(
               text: 'View Details',
-              onPressed: () {
-                print('ACTION: View Details (Past Rental) for rental ID: ${rental.rentalId}');
-              },
+              onPressed: () {},
               context: context,
               isSecondary: true,
             )
@@ -284,16 +269,12 @@ class RentalCardWidget extends StatelessWidget {
         }
       }
     }
-    // Lógica para el Dueño (Owner)
     else {
-      // Para el dueño, "Awaiting Payment" es solo un estado informativo.
       if (rental.status == RentalStatus.awaiting_payment) {
         return [
           _buildActionButton(
             text: 'View Details',
-            onPressed: () {
-              print('ACTION: View Details (Owner, Awaiting Payment) for rental ID: ${rental.rentalId}');
-            },
+            onPressed: () {},
             context: context,
             isSecondary: true,
           ),
@@ -303,20 +284,16 @@ class RentalCardWidget extends StatelessWidget {
         return [
           _buildActionButton(
             text: 'View Details',
-            onPressed: () {
-              print('ACTION: View Details (Owner) for rental ID: ${rental.rentalId}');
-            },
+            onPressed: () {},
             context: context,
           ),
         ];
-      } else { // Alquiler Pasado
+      } else {
         if (rental.status == RentalStatus.completed || rental.status == RentalStatus.disputed) {
           return [
             _buildActionButton(
               text: 'Report Issue',
-              onPressed: () {
-                print('ACTION: Report Issue for rental ID: ${rental.rentalId}');
-              },
+              onPressed: () {},
               context: context,
               color: const Color(0xFFFF3B30),
             )
@@ -325,9 +302,7 @@ class RentalCardWidget extends StatelessWidget {
           return [
             _buildActionButton(
               text: 'View Details',
-              onPressed: () {
-                print('ACTION: View Details (Past Rental) for rental ID: ${rental.rentalId}');
-              },
+              onPressed: () {},
               context: context,
               isSecondary: true,
             )
@@ -360,7 +335,7 @@ class RentalCardWidget extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8),
           textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
           elevation: 0,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap, // Reduce el padding extra del tap
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
         child: Text(text, textAlign: TextAlign.center, maxLines: 1),
       ),

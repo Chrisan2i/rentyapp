@@ -2,9 +2,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
 import 'package:rentyapp/core/theme/app_text_styles.dart';
 import 'package:rentyapp/features/auth/models/payment_method.dart';
+import 'package:rentyapp/core/controllers/wallet_controller.dart';
+import 'package:rentyapp/features/earnings/add_payment_method_view.dart';
 
 class DepositFundsSheet extends StatefulWidget {
   final List<PaymentMethodModel> paymentMethods;
@@ -29,11 +32,18 @@ class _DepositFundsSheetState extends State<DepositFundsSheet> {
         _selectedMethodId = widget.paymentMethods.first.paymentMethodId;
       }
     }
+    // Añadimos el listener para que el botón se actualice al escribir
+    _amountController.addListener(() => setState(() {}));
   }
 
-  // Helper para obtener el icono de la tarjeta
+  @override
+  void dispose() {
+    _amountController.removeListener(() {});
+    _amountController.dispose();
+    super.dispose();
+  }
+
   Widget _getCardIcon(String brand) {
-    // En una app real, usarías imágenes SVG de las marcas
     switch (brand.toLowerCase()) {
       case 'visa':
         return const Icon(Icons.credit_card, color: AppColors.primary);
@@ -42,6 +52,18 @@ class _DepositFundsSheetState extends State<DepositFundsSheet> {
       default:
         return const Icon(Icons.credit_card, color: AppColors.primary);
     }
+  }
+
+  void _onAddNewCard() {
+    Navigator.of(context).pop();
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        // Ya no se necesita ChangeNotifierProvider.value aquí porque el
+        // WalletController se provee globalmente.
+        builder: (_) => const AddPaymentMethodView(),
+      ),
+    );
   }
 
   @override
@@ -59,7 +81,6 @@ class _DepositFundsSheetState extends State<DepositFundsSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Encabezado
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -74,7 +95,6 @@ class _DepositFundsSheetState extends State<DepositFundsSheet> {
               ),
               const SizedBox(height: 24),
 
-              // Campo de Monto
               const Text('Amount', style: AppTextStyles.inputLabel),
               const SizedBox(height: 8),
               TextField(
@@ -97,17 +117,12 @@ class _DepositFundsSheetState extends State<DepositFundsSheet> {
               ),
               const SizedBox(height: 12),
 
-              // Montos Rápidos
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: _quickAmounts.map((amount) => Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4.0),
                     child: OutlinedButton(
-                      onPressed: () {
-                        _amountController.text = amount.toStringAsFixed(2);
-                        setState(() {});
-                      },
+                      onPressed: () { _amountController.text = amount.toStringAsFixed(2); },
                       child: Text('\$${amount.toInt()}'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.white70,
@@ -120,29 +135,36 @@ class _DepositFundsSheetState extends State<DepositFundsSheet> {
               ),
               const SizedBox(height: 24),
 
-              // Selección de Método de Pago
               const Text('Select Payment Method', style: AppTextStyles.inputLabel),
               const SizedBox(height: 12),
-              ListView.separated(
-                itemCount: widget.paymentMethods.length,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final method = widget.paymentMethods[index];
-                  return _buildPaymentMethodTile(method);
-                },
-              ),
+
+              if (widget.paymentMethods.isEmpty)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24.0),
+                    child: Text("No payment methods found.", style: AppTextStyles.subtitle),
+                  ),
+                )
+              else
+                ListView.separated(
+                  itemCount: widget.paymentMethods.length,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final method = widget.paymentMethods[index];
+                    return _buildPaymentMethodTile(method);
+                  },
+                ),
               const SizedBox(height: 12),
-              // Botón para añadir nuevo método
+
               TextButton.icon(
-                onPressed: (){ /* TODO: Navegar a la pantalla de añadir tarjeta */ },
+                onPressed: _onAddNewCard,
                 icon: const Icon(Icons.add, color: AppColors.primary),
                 label: const Text('Add New Card', style: AppTextStyles.bannerAction),
               ),
               const SizedBox(height: 24),
 
-              // Botón de Acción
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -150,7 +172,7 @@ class _DepositFundsSheetState extends State<DepositFundsSheet> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.white,
-                    disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
+                    disabledBackgroundColor: AppColors.primary.withAlpha(128),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -167,7 +189,7 @@ class _DepositFundsSheetState extends State<DepositFundsSheet> {
     );
   }
 
-  Widget _buildPaymentMethodTile(PaymentMethodModel method){
+  Widget _buildPaymentMethodTile(PaymentMethodModel method) {
     final bool isSelected = _selectedMethodId == method.paymentMethodId;
     return Material(
       color: AppColors.surface,
@@ -187,7 +209,7 @@ class _DepositFundsSheetState extends State<DepositFundsSheet> {
           child: Row(
             children: [
               CircleAvatar(
-                backgroundColor: AppColors.primary.withOpacity(0.1),
+                backgroundColor: AppColors.primary.withAlpha(26),
                 child: _getCardIcon(method.providerDetails['brand'] ?? ''),
               ),
               const SizedBox(width: 12),

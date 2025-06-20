@@ -1,15 +1,23 @@
+// lib/features/rentals/views/widgets/payment_method_card.dart
+
 import 'package:flutter/material.dart';
-import 'package:rentyapp/features/auth/models/payment_method.dart'; // Importa el modelo
+import 'package:rentyapp/core/widgets/info_card.dart'; // Usa el widget InfoCard centralizado
+import 'package:rentyapp/features/auth/models/payment_method.dart';
 
 class PaymentMethodCard extends StatelessWidget {
   final PaymentMethodModel paymentMethod;
+  final VoidCallback onChangePressed; // Añadimos un callback para el botón "Change"
 
-  const PaymentMethodCard({super.key, required this.paymentMethod});
+  const PaymentMethodCard({
+    super.key,
+    required this.paymentMethod,
+    required this.onChangePressed,
+  });
 
   @override
   Widget build(BuildContext context) {
     final details = paymentMethod.providerDetails;
-    return _InfoCard(
+    return InfoCard( // Usamos el widget InfoCard
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -17,7 +25,8 @@ class PaymentMethodCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('Payment Method', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-              TextButton(onPressed: () {}, child: const Text('Change'))
+              // El botón ahora usa el callback que le pasamos
+              TextButton(onPressed: onChangePressed, child: const Text('Change'))
             ],
           ),
           const SizedBox(height: 8),
@@ -28,28 +37,15 @@ class PaymentMethodCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${details['brand'] ?? 'Visa'} **** ${details['last4'] ?? '4242'}', style: const TextStyle(fontSize: 16, color: Colors.white)),
-                  Text('Default payment method', style: TextStyle(color: Colors.grey.shade400)),
+                  Text(paymentMethod.alias, style: const TextStyle(fontSize: 16, color: Colors.white)),
+                  if (paymentMethod.isDefault)
+                    Text('Default payment method', style: TextStyle(color: Colors.grey.shade400)),
                 ],
               )
             ],
           ),
         ],
       ),
-    );
-  }
-}
-
-class _InfoCard extends StatelessWidget {
-  final Widget child;
-  const _InfoCard({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(color: const Color(0xFF1E1E1E), borderRadius: BorderRadius.circular(12)),
-      child: child,
     );
   }
 }

@@ -1,12 +1,15 @@
+// lib/features/rentals/rental_view.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rentyapp/core/controllers/controller.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
+import 'package:rentyapp/features/earnings/add_payment_method_view.dart';
 import 'package:rentyapp/features/rentals/models/rental_model.dart';
 import 'package:rentyapp/features/auth/models/payment_method.dart';
 import 'package:rentyapp/features/auth/services/payment_service.dart';
 import 'package:rentyapp/features/rentals/confirm_and_pay/confirm_and_pay_screen.dart';
-
+import 'package:rentyapp/core/controllers/wallet_controller.dart'; // Importa el WalletController
 
 import 'widgets/rental_card_widget.dart';
 import 'widgets/rental_status_selector.dart';
@@ -20,19 +23,17 @@ class RentalView extends StatefulWidget {
 }
 
 class _RentalViewState extends State<RentalView> {
-  String _currentTab = 'renter'; // 'renter' o 'owner'
-  bool _isOngoingSelected = true; // true para 'Ongoing', false para 'Past'
-  bool _isProcessingPayment = false; // Estado para mostrar carga al presionar "Pay Now"
+  String _currentTab = 'renter';
+  bool _isOngoingSelected = true;
+  bool _isProcessingPayment = false;
 
-  // Instanciamos el servicio que vamos a necesitar.
-  final PaymentService _paymentService = PaymentService();
+  // Ya no necesitas instanciar PaymentService aquí, usaremos el WalletController
+  // final PaymentService _paymentService = PaymentService();
 
-  /// Filtra la lista de alquileres basándose en las pestañas seleccionadas.
-  List<RentalModel> _filterRentals(
-      List<RentalModel> allRentals, String userId) {
+  List<RentalModel> _filterRentals(List<RentalModel> allRentals, String userId) {
     return allRentals.where((rental) {
-      final bool isUserRenter = rental.renterInfo['userId'] == userId;
-      final bool isUserOwner = rental.ownerInfo['userId'] == userId;
+      final isUserRenter = rental.renterInfo['userId'] == userId;
+      final isUserOwner = rental.ownerInfo['userId'] == userId;
 
       if (_currentTab == 'renter' && !isUserRenter) return false;
       if (_currentTab == 'owner' && !isUserOwner) return false;
@@ -49,56 +50,64 @@ class _RentalViewState extends State<RentalView> {
     }).toList();
   }
 
-  /// Maneja la lógica cuando el usuario presiona el botón "Pay Now" en una tarjeta.
+  /// Maneja la lógica cuando el usuario presiona "Pay Now".
+  /// --- ESTA FUNCIÓN ESTÁ COMPLETAMENTE RECONSTRUIDA ---
   Future<void> _handlePayNowPressed(RentalModel rental) async {
-    // Evita que el usuario haga múltiples clicks mientras se procesa.
     if (_isProcessingPayment) return;
-
-    // Muestra un indicador de carga en toda la pantalla.
     setState(() => _isProcessingPayment = true);
 
     try {
-      final controller = Provider.of<AppController>(context, listen: false);
-      final userId = controller.currentUser?.userId;
+      // Usamos el WalletController que ya está disponible globalmente.
+      final walletController = context.read<WalletController>();
 
-      if (userId == null) {
-        throw Exception("User not logged in. Please restart the app.");
+      // La lógica para obtener el método de pago por defecto ahora es más simple
+      // y está dentro del controlador (si lo necesitaras). Por ahora, lo hacemos aquí.
+      PaymentMethodModel? defaultMethod;
+      try {
+        defaultMethod = walletController.paymentMethods.firstWhere((m) => m.isDefault);
+      } catch (e) {
+        defaultMethod = null; // No se encontró ningún método por defecto.
       }
 
-      // Llama al servicio para obtener el método de pago por defecto.
-      final PaymentMethodModel? paymentMethod =
-      await _paymentService.getDefaultPaymentMethod(userId);
-
-      if (paymentMethod == null) {
-        // Si no hay método de pago, informa al usuario.
-        throw Exception(
-            "No default payment method found. Please add one in your profile.");
-      }
-
-      // Antes de navegar, verifica si el widget sigue en pantalla.
+      // Si el widget ya no está en pantalla, no hacemos nada.
       if (!mounted) return;
 
-      // Navega a la pantalla de pago con toda la información necesaria.
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => ConfirmAndPayScreen(
-            rental: rental,
-            defaultPaymentMethod: paymentMethod,
+      if (defaultMethod != null) {
+        // CASO 1: Hay un método de pago. Navegamos a la pantalla de confirmación.
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => ConfirmAndPayScreen(
+              rental: rental,
+              defaultPaymentMethod: defaultMethod!,
+            ),
           ),
-        ),
-      );
+        );
+      } else {
+        // CASO 2: No hay método de pago. Guiamos al usuario.
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please add a payment method to continue.'),
+            backgroundColor: AppColors.warning, // Un color más amigable que el rojo
+          ),
+        );
+        // Navegamos a la pantalla para añadir un método de pago.
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => const AddPaymentMethodView(),
+          ),
+        );
+      }
     } catch (e) {
-      // Si ocurre cualquier error, muéstralo en un SnackBar.
+      // Capturamos cualquier otro error inesperado.
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString()),
+            content: Text('An unexpected error occurred: ${e.toString()}'),
             backgroundColor: AppColors.danger,
           ),
         );
       }
     } finally {
-      // Ya sea que la operación fue exitosa o no, oculta el indicador de carga.
       if (mounted) {
         setState(() => _isProcessingPayment = false);
       }
@@ -107,7 +116,7 @@ class _RentalViewState extends State<RentalView> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Provider.of<AppController>(context);
+    final controller = context.watch<AppController>();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -120,12 +129,10 @@ class _RentalViewState extends State<RentalView> {
         ),
         centerTitle: true,
       ),
-      // Usamos un Stack para poder mostrar el indicador de carga por encima de todo el cuerpo.
       body: Stack(
         children: [
           _buildBody(controller),
           if (_isProcessingPayment)
-          // Widget de carga modal
             Positioned.fill(
               child: Container(
                 color: Colors.black.withOpacity(0.5),
@@ -145,7 +152,6 @@ class _RentalViewState extends State<RentalView> {
         return const Center(
           child: CircularProgressIndicator(color: AppColors.primary),
         );
-
       case ViewState.error:
         return const Center(
           child: Text(
@@ -153,7 +159,6 @@ class _RentalViewState extends State<RentalView> {
             style: TextStyle(color: AppColors.danger),
           ),
         );
-
       case ViewState.idle:
         if (controller.currentUser == null) {
           return const Center(
@@ -163,65 +168,62 @@ class _RentalViewState extends State<RentalView> {
             ),
           );
         }
-
         final filteredRentals = _filterRentals(
           controller.rentals,
           controller.currentUser!.userId,
         );
-
-        return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            children: [
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: RentalTabSelector(
-                  currentTab: _currentTab,
-                  onTabSelected: (tabType) =>
-                      setState(() => _currentTab = tabType),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: RentalStatusSelector(
-                  isOngoingSelected: _isOngoingSelected,
-                  onStatusSelected: (isOngoing) =>
-                      setState(() => _isOngoingSelected = isOngoing),
-                ),
-              ),
-              const SizedBox(height: 20),
-              if (filteredRentals.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.only(top: 50.0),
-                  child: Center(
-                    child: Text(
-                      "No rentals found in this category.",
-                      style: TextStyle(color: Colors.white70),
-                    ),
+        return RefreshIndicator(
+          onRefresh: () async => controller.fetchUserRentals(),
+          color: AppColors.primary,
+          backgroundColor: AppColors.surface,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              children: [
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: RentalTabSelector(
+                    currentTab: _currentTab,
+                    onTabSelected: (tabType) => setState(() => _currentTab = tabType),
                   ),
-                )
-              else
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: filteredRentals.length,
-                  itemBuilder: (context, index) {
-                    // --- ¡AQUÍ ESTÁ LA CONEXIÓN CLAVE! ---
-                    // Pasamos nuestra función de lógica al callback de la tarjeta.
-                    return RentalCardWidget(
-                      rental: filteredRentals[index],
-                      currentTab: _currentTab,
-                      onPayNowPressed: _handlePayNowPressed, // <- Conectado
-                    );
-                  },
-                  separatorBuilder: (context, index) =>
-                  const SizedBox(height: 16),
                 ),
-              const SizedBox(height: 40),
-            ],
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: RentalStatusSelector(
+                    isOngoingSelected: _isOngoingSelected,
+                    onStatusSelected: (isOngoing) => setState(() => _isOngoingSelected = isOngoing),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                if (filteredRentals.isEmpty)
+                  Padding(
+                    padding: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.2),
+                    child: const Center(
+                      child: Text(
+                        "No rentals found in this category.",
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    ),
+                  )
+                else
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
+                    itemCount: filteredRentals.length,
+                    itemBuilder: (context, index) {
+                      return RentalCardWidget(
+                        rental: filteredRentals[index],
+                        currentTab: _currentTab,
+                        onPayNowPressed: _handlePayNowPressed,
+                      );
+                    },
+                    separatorBuilder: (context, index) => const SizedBox(height: 12),
+                  ),
+              ],
+            ),
           ),
         );
     }
