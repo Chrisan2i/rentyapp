@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:rentyapp/features/rentals/models/rental_model.dart';
 
-// --- Extensión para el Enum RentalStatus ---
-// ¡NUEVO ESTADO AÑADIDO!
+// NO MÁS IMPORTS DE NAVEGACIÓN O PANTALLAS ESPECÍFICAS AQUÍ.
+
+// --- Extensión para el Enum RentalStatus (Sin cambios) ---
 extension RentalStatusExtension on RentalStatus {
   String get displayName {
     switch (this) {
@@ -27,7 +28,7 @@ extension RentalStatusExtension on RentalStatus {
   Color get displayColor {
     switch (this) {
       case RentalStatus.awaiting_payment:
-        return Colors.blue.shade600; // Un color distintivo para el pago
+        return Colors.blue.shade600;
       case RentalStatus.awaiting_delivery:
         return Colors.orange.shade700;
       case RentalStatus.ongoing:
@@ -44,19 +45,25 @@ extension RentalStatusExtension on RentalStatus {
 
 class RentalCardWidget extends StatelessWidget {
   final RentalModel rental;
-  final String currentTab; // 'renter' o 'owner'
+  final String currentTab;
+
+  // --- ¡NUEVO! CALLBACK PARA "PAY NOW" ---
+  // Este es el único cambio significativo en la declaración de la clase.
+  // Es una función que será proporcionada por el widget padre (RentalView).
+  final Function(RentalModel rental) onPayNowPressed;
 
   const RentalCardWidget({
     Key? key,
     required this.rental,
     required this.currentTab,
+    required this.onPayNowPressed, // Lo hacemos un parámetro requerido.
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12.0),
-      margin: const EdgeInsets.symmetric(vertical: 8.0), // Margen para separar las tarjetas
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
       decoration: BoxDecoration(
         color: const Color(0xFF2C2C2E),
         borderRadius: BorderRadius.circular(16),
@@ -74,6 +81,7 @@ class RentalCardWidget extends StatelessWidget {
     );
   }
 
+  // --- _buildItemImage y _buildFallbackImage (Sin cambios) ---
   Widget _buildItemImage() {
     final imageUrl = rental.productInfo['imageUrl'] as String?;
     final title = rental.productInfo['title'] as String? ?? 'N/A';
@@ -93,7 +101,9 @@ class RentalCardWidget extends StatelessWidget {
             width: 72,
             height: 72,
             color: Colors.grey.shade800,
-            child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey.shade600)),
+            child: Center(
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: Colors.grey.shade600)),
           );
         },
         errorBuilder: (context, error, stackTrace) {
@@ -114,36 +124,38 @@ class RentalCardWidget extends StatelessWidget {
       ),
       child: Center(
         child: Text(
-          title.isNotEmpty ? title.substring(0, title.length > 4 ? 4 : title.length) : 'N/A',
-          style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 14),
+          title.isNotEmpty
+              ? title.substring(0, title.length > 4 ? 4 : title.length)
+              : 'N/A',
+          style: const TextStyle(
+              color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 14),
           textAlign: TextAlign.center,
         ),
       ),
     );
   }
 
-  // --- CORRECCIÓN DE OVERFLOW ---
-  // Se eliminó el SizedBox con altura fija para permitir que la columna crezca naturalmente.
+  // --- _buildInfoColumn, _buildActionsColumn, _buildStatusTag (Sin cambios) ---
   Widget _buildInfoColumn() {
-    final isOngoing = rental.status == RentalStatus.ongoing || rental.status == RentalStatus.awaiting_delivery;
+    final isOngoing = rental.status == RentalStatus.ongoing ||
+        rental.status == RentalStatus.awaiting_delivery;
     final datePrefix = isOngoing ? 'Due: ' : 'Completed: ';
     final formattedDate = DateFormat('MMM dd').format(rental.endDate);
     final ownerName = rental.ownerInfo['fullName'] as String? ?? 'Owner';
     final renterName = rental.renterInfo['fullName'] as String? ?? 'Renter';
-    final relationshipText = currentTab == 'renter'
-        ? 'From $ownerName'
-        : 'By $renterName';
-    final itemTitle = rental.productInfo['title'] as String? ?? 'Untitled Product';
+    final relationshipText =
+    currentTab == 'renter' ? 'From $ownerName' : 'By $renterName';
+    final itemTitle =
+        rental.productInfo['title'] as String? ?? 'Untitled Product';
     final total = rental.financials['total'] ?? 0.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      // No necesitamos MainAxisAlignment.spaceBetween si no hay altura fija.
-      // El espaciado se manejará con SizedBox.
       children: [
         Text(
           itemTitle,
-          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+              color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -164,22 +176,25 @@ class RentalCardWidget extends StatelessWidget {
         const SizedBox(height: 4),
         Row(
           children: [
-            Icon(Icons.calendar_today_outlined, color: Colors.grey.shade500, size: 14),
+            Icon(Icons.calendar_today_outlined,
+                color: Colors.grey.shade500, size: 14),
             const SizedBox(width: 4),
-            Text('$datePrefix$formattedDate', style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+            Text('$datePrefix$formattedDate',
+                style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
           ],
         ),
         const SizedBox(height: 6),
         Text(
-          '\$${total.toStringAsFixed(2)} total', // Usar toFixed(2) para mostrar centavos
-          style: const TextStyle(color: Color(0xFF0A84FF), fontSize: 15, fontWeight: FontWeight.bold),
+          '\$${total.toStringAsFixed(2)} total',
+          style: const TextStyle(
+              color: Color(0xFF0A84FF),
+              fontSize: 15,
+              fontWeight: FontWeight.bold),
         ),
       ],
     );
   }
 
-  // --- CORRECCIÓN DE OVERFLOW ---
-  // Se eliminó la altura fija para mayor flexibilidad.
   Widget _buildActionsColumn(BuildContext context) {
     return SizedBox(
       width: 105,
@@ -188,7 +203,7 @@ class RentalCardWidget extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _buildStatusTag(),
-          const SizedBox(height: 8), // Espacio entre la etiqueta y el botón
+          const SizedBox(height: 8),
           ..._buildActionButtons(context),
         ],
       ),
@@ -204,26 +219,27 @@ class RentalCardWidget extends StatelessWidget {
       ),
       child: Text(
         rental.status.displayName,
-        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+        style: const TextStyle(
+            color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
         textAlign: TextAlign.center,
       ),
     );
   }
 
-  // --- LÓGICA DE BOTONES ACTUALIZADA ---
-  // Se añadió el caso para 'awaiting_payment'.
+  // --- ¡AQUÍ ESTÁ EL CAMBIO IMPORTANTE! ---
   List<Widget> _buildActionButtons(BuildContext context) {
-    final bool isOngoingOrDelivering = rental.status == RentalStatus.ongoing || rental.status == RentalStatus.awaiting_delivery;
+    final bool isOngoingOrDelivering = rental.status == RentalStatus.ongoing ||
+        rental.status == RentalStatus.awaiting_delivery;
 
-    // Lógica para el Arrendatario (Renter)
     if (currentTab == 'renter') {
       if (rental.status == RentalStatus.awaiting_payment) {
         return [
           _buildActionButton(
             text: 'Pay Now',
             onPressed: () {
-              print('ACTION: Pay Now for rental ID: ${rental.rentalId}');
-              // TODO: Navegar a la pantalla de pago.
+              // En lugar de hacer la lógica aquí, simplemente se la delegamos
+              // al padre a través del callback que nos proporcionó.
+              onPayNowPressed(rental);
             },
             context: context,
             color: Colors.green.shade600,

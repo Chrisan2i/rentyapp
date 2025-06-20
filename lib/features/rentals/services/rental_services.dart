@@ -141,4 +141,22 @@ class RentalService {
       return []; // Devuelve una lista vacía para no romper la UI.
     }
   }
+  Future<void> confirmAndPayRental(String rentalId) async {
+    // 1. Simula una llamada de red a tu backend/cloud function.
+    print('Procesando pago para el alquiler: $rentalId...');
+    await Future.delayed(const Duration(seconds: 2));
+
+    // 2. En tu backend real, harías lo siguiente:
+    //    - Procesar el pago con Stripe.
+    //    - Si es exitoso, actualizar el documento de alquiler en Firestore.
+    //      await FirebaseFirestore.instance.collection('rentals').doc(rentalId).update({
+    //        'status': RentalStatus.awaiting_delivery.name,
+    //      });
+    print('Pago completado. Actualizando estado a awaiting_delivery.');
+
+    // 3. Simula un posible error de red o de pago.
+    // if (some_error_condition) {
+    //   throw Exception("El pago no pudo ser procesado. Intente de nuevo.");
+    // }
+  }
 }

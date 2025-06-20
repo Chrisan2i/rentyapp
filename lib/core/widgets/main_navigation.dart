@@ -5,7 +5,7 @@ import 'package:rentyapp/core/theme/app_colors.dart';
 import 'package:rentyapp/core/theme/app_text_styles.dart';
 import 'custom_bottom_navbar.dart';
 import 'package:rentyapp/features/add_product/view/add_product_view.dart';
-import 'package:rentyapp/features/rentals/my_rentals_screen.dart';
+import 'package:rentyapp/features/rentals/my_rentals/my_rentals_screen.dart';
 import 'package:rentyapp/features/search/search_view.dart';
 
 class MainNavigation extends StatefulWidget {

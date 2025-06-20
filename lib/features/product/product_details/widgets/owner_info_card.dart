@@ -1,59 +1,57 @@
 // lib/features/product/widgets/owner_info_card.dart
 
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart'; // Importa el paquete recomendado
+// import 'package:cached_network_image/cached_network_image.dart'; // YA NO LO NECESITAMOS
 import 'package:rentyapp/core/theme/app_colors.dart';
-import 'package:rentyapp/features/auth/models/user_model.dart'; // Asegúrate que la ruta al UserModel es correcta
+import 'package:rentyapp/features/auth/models/user_model.dart';
+import '../../../../core/widgets/custom_network_image.dart'; // ¡IMPORTA NUESTRO WIDGET!
 import 'section_card.dart';
 
 class OwnerInfoCard extends StatelessWidget {
-  // --- CORRECCIÓN 1: Hacemos el modelo opcional ---
-  // Ahora puede ser nulo para que el constructor placeholder funcione.
+  // ... (el resto del widget no cambia)
   final UserModel? ownerInfo;
   final bool isPlaceholder;
 
-  // Constructor principal: requiere un UserModel y no es un placeholder.
   const OwnerInfoCard({
     super.key,
     required this.ownerInfo,
   }) : isPlaceholder = false;
 
-  // --- CORRECCIÓN 2: Añadimos el constructor nombrado para el placeholder ---
-  // Este constructor no recibe datos y establece `isPlaceholder` en true.
   const OwnerInfoCard.placeholder({super.key})
       : ownerInfo = null,
         isPlaceholder = true;
 
+
   @override
   Widget build(BuildContext context) {
-    // Primero, renderizamos el widget esqueleto si es un placeholder.
     if (isPlaceholder) {
       return _buildPlaceholder();
     }
 
-    // Si no es un placeholder, entonces sabemos que `ownerInfo` no es nulo.
-    // Usamos '!' para asegurarle a Dart que el objeto existe.
     final owner = ownerInfo!;
     final String ownerInitials = owner.fullName.isNotEmpty ? owner.fullName[0].toUpperCase() : '?';
 
-    // Este es el widget real que muestra los datos.
     return SectionCard(
       title: 'Owner Information',
       child: Row(
         children: [
           CircleAvatar(
             radius: 24,
-            backgroundColor: AppColors.surface, // Un color de fondo para el círculo
+            backgroundColor: AppColors.surface,
             child: ClipOval(
-              // --- MEJORA: Usamos CachedNetworkImage ---
-              // Es más robusto: maneja carga, errores y caché.
-              child: CachedNetworkImage(
+              // --- AQUÍ ESTÁ EL CAMBIO ---
+              // Usamos nuestro widget personalizado
+              child: CustomNetworkImage(
                 imageUrl: owner.profileImageUrl,
                 fit: BoxFit.cover,
                 width: 48,
                 height: 48,
-                placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-                errorWidget: (context, url, error) => Center(
+                // Le pasamos un placeholder personalizado
+                placeholder: (context) => const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                ),
+                // Y un error widget personalizado que muestra las iniciales
+                errorWidget: (context, error) => Center(
                   child: Text(
                     ownerInitials,
                     style: const TextStyle(color: AppColors.white, fontSize: 20, fontWeight: FontWeight.bold),
@@ -62,6 +60,7 @@ class OwnerInfoCard extends StatelessWidget {
               ),
             ),
           ),
+          // ... el resto del widget no cambia ...
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -92,7 +91,7 @@ class OwnerInfoCard extends StatelessWidget {
     );
   }
 
-  /// Widget que se muestra durante el estado de carga (placeholder).
+  // ... (el método _buildPlaceholder no cambia)
   Widget _buildPlaceholder() {
     return SectionCard(
       title: 'Owner Information',

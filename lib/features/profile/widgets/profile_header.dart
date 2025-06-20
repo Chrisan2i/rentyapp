@@ -1,39 +1,47 @@
 // ARCHIVO: lib/features/profile/widgets/profile_header.dart
 
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart'; // ¡Importa el paquete!
 import 'package:rentyapp/core/theme/app_colors.dart';
 import 'package:rentyapp/core/theme/app_text_styles.dart';
-import 'package:rentyapp/features/auth/models/user_model.dart'; // Ajusta la ruta a tu modelo
-import 'package:rentyapp/features/settings/settings_view.dart';
+import 'package:rentyapp/core/widgets/custom_network_image.dart';
+import 'package:rentyapp/features/auth/models/user_model.dart';
 
 class ProfileHeader extends StatelessWidget {
   final UserModel user;
   const ProfileHeader({super.key, required this.user});
 
+  String _getVerificationText(VerificationStatus status) {
+    switch (status) {
+      case VerificationStatus.level1_basic:
+        return 'Level 1 Verified';
+      case VerificationStatus.level2_plus:
+        return 'Plus Verified';
+      case VerificationStatus.notVerified:
+      // CORRECCIÓN: El 'default' era redundante porque todos los casos del enum estaban cubiertos.
+        return '';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Para que sea más legible, obtenemos las iniciales.
     final String userInitials = user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : '?';
+    final String verificationText = _getVerificationText(user.verificationStatus);
+
+    final String userBio = "Digital nomad exploring the world. Passionate about tech and photography.";
 
     return Column(
       children: [
-        // --- INICIO DE LA CORRECCIÓN PRINCIPAL ---
-        // Reemplazamos CircleAvatar con uno que usa CachedNetworkImage para robustez.
         CircleAvatar(
           radius: 48,
           backgroundColor: AppColors.surface,
           child: ClipOval(
-            child: CachedNetworkImage(
+            child: CustomNetworkImage(
               imageUrl: user.profileImageUrl,
               fit: BoxFit.cover,
-              width: 96, // El doble del radio
-              height: 96, // El doble del radio
-              // Widget que se muestra mientras la imagen carga
-              placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-              // Widget que se muestra si hay un error de red (como el SocketException)
-              // o si la URL está vacía.
-              errorWidget: (context, url, error) => Center(
+              width: 96,
+              height: 96,
+              placeholder: (context) => const CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+              errorWidget: (context, error) => Center(
                 child: Text(
                   userInitials,
                   style: const TextStyle(fontSize: 40, color: AppColors.white, fontWeight: FontWeight.bold),
@@ -42,8 +50,6 @@ class ProfileHeader extends StatelessWidget {
             ),
           ),
         ),
-        // --- FIN DE LA CORRECCIÓN PRINCIPAL ---
-
         const SizedBox(height: 16),
         Text(user.fullName, style: AppTextStyles.sectionTitle),
         Text('@${user.username}', style: AppTextStyles.subtitle),
@@ -58,28 +64,40 @@ class ProfileHeader extends StatelessWidget {
             Text('(${user.totalReviews} reviews)', style: AppTextStyles.subtitle),
           ],
         ),
-        TextButton.icon(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SettingsView()),
-            );
-          },
-          icon: const Icon(Icons.edit, size: 18, color: AppColors.primary),
-          label: const Text('Settings', style: AppTextStyles.bannerAction),
-        ),
         const SizedBox(height: 16),
-        if (user.verificationStatus != VerificationStatus.notVerified)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              border: Border.all(color: AppColors.primary),
-              color: AppColors.primary.withAlpha(51), // Usamos withAlpha en lugar de withOpacity
-              borderRadius: BorderRadius.circular(8),
+
+        if (userBio.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Text(
+              userBio,
+              textAlign: TextAlign.center,
+              // CORRECCIÓN: Este estilo ahora existe en AppTextStyles.
+              style: AppTextStyles.body,
             ),
-            child: const Text(
-              'Verified User',
-              style: TextStyle(color: AppColors.primary, fontSize: 12),
+          ),
+
+        const SizedBox(height: 20),
+
+        if (verificationText.isNotEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              // CORRECCIÓN: Se usa .withAlpha() en lugar del obsoleto .withOpacity().
+              color: AppColors.primary.withAlpha(38), // 255 * 0.15 = 38.25
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.primary, width: 1),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.verified, color: AppColors.primary, size: 14),
+                const SizedBox(width: 6),
+                Text(
+                  verificationText,
+                  style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ],
             ),
           ),
       ],
