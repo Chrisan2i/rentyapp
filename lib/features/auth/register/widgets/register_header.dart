@@ -1,3 +1,4 @@
+// lib/features/auth/register/widgets/register_header.dart
 import 'package:flutter/material.dart';
 import 'package:rentyapp/core/theme/app_text_styles.dart';
 
@@ -12,11 +13,9 @@ class RegisterHeader extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(height: 60), // separa del top si hay barra de estado
             Text(
               'Join Renty',
-              style: AppTextStyles.headline,
-              textAlign: TextAlign.center,
+              style: AppTextStyles.loginTitle, // Reutilizando un estilo adecuado
             ),
             SizedBox(height: 10),
             Text(
@@ -24,7 +23,6 @@ class RegisterHeader extends StatelessWidget {
               style: AppTextStyles.subtitle,
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 32),
           ],
         ),
       ),

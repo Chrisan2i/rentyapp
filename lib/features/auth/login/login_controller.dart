@@ -1,71 +1,64 @@
 // lib/features/auth/login/login_controller.dart
 import 'package:flutter/material.dart';
+import 'package:rentyapp/features/auth/models/user_model.dart';
 import 'package:rentyapp/features/auth/services/auth_service.dart';
-import 'package:rentyapp/features/auth/models/user_model.dart'; // Asegúrate que la ruta al modelo es correcta
 
-// Enum para un manejo de estado claro y sin errores de tipeo.
 enum LoginState {
-  idle,      // Estado inicial, no ha pasado nada.
-  loading,   // La operación de login está en progreso.
-  error,     // Ocurrió un error.
-  success,   // El login fue exitoso.
+  idle,
+  loading,
+  error,
+  success,
 }
 
 class LoginController with ChangeNotifier {
   final AuthService _authService;
 
-  // El constructor requiere el AuthService (Inyección de dependencias).
-  // Esto hace que el controlador sea testeable.
   LoginController({required AuthService authService}) : _authService = authService;
 
-  // --- ESTADO PRIVADO ---
   LoginState _state = LoginState.idle;
   String? _errorMessage;
   UserModel? _loggedInUser;
 
-  // --- GETTERS PÚBLICOS (Solo lectura para la UI) ---
   LoginState get state => _state;
   String? get errorMessage => _errorMessage;
   UserModel? get loggedInUser => _loggedInUser;
 
-  /// Método principal que la UI llamará para iniciar el proceso de login.
   Future<void> login({
     required String email,
     required String password,
   }) async {
-    // 1. Validar campos de entrada.
-    if (email.trim().isEmpty || password.trim().isEmpty) {
-      _updateState(LoginState.error, 'Por favor completa todos los campos.');
-      return;
-    }
+    // La validación de campos vacíos ahora se maneja 100% en el Form de la LoginPage.
+    // El controlador asume que recibe datos válidos de la UI.
 
-    // 2. Iniciar el estado de carga.
     _updateState(LoginState.loading);
 
     try {
-      // 3. Llamar al servicio de autenticación.
-      // La lógica de cómo hablar con Firebase está en el servicio, no aquí.
-      final user = await _authService.signIn(
-        email: email.trim(),
-        password: password.trim(),
+      final userModel = await _authService.signIn(
+        email: email, // No es necesario .trim() aquí si ya se hace en la LoginPage
+        password: password,
       );
 
-      if (user != null) {
-        // 4. Éxito: Guardar el modelo del usuario y actualizar el estado.
-        _loggedInUser = user;
-        _updateState(LoginState.success);
+      if (userModel != null) {
+        // Lógica de negocio: Comprobar el estado del usuario.
+        if (userModel.status == 'active') {
+          _loggedInUser = userModel;
+          _updateState(LoginState.success);
+        } else {
+          // El usuario existe pero su cuenta no está activa.
+          _updateState(LoginState.error, 'Tu cuenta está ${userModel.status}. Contacta a soporte.');
+        }
       } else {
-        // 5. Error: Credenciales inválidas (manejado por el servicio).
-        _updateState(LoginState.error, 'Correo o contraseña inválidos.');
+        // El AuthService devolvió null, lo que significa credenciales inválidas.
+        _updateState(LoginState.error, 'Email o contraseña inválidos.');
       }
     } catch (e) {
-      // 6. Error: Capturar cualquier otra excepción inesperada.
+      // Capturar cualquier otro error inesperado (ej. problemas de red).
       _updateState(LoginState.error, 'Ocurrió un error inesperado. Inténtalo de nuevo.');
-      print("❌ Error capturado en LoginController: $e");
+      debugPrint("❌ Error capturado en LoginController: $e");
     }
   }
 
-  /// Método privado para centralizar las actualizaciones de estado y notificar a los listeners.
+  /// Método privado para centralizar las actualizaciones de estado.
   void _updateState(LoginState newState, [String? message]) {
     _state = newState;
     _errorMessage = message;
