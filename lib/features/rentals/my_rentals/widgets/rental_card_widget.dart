@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:rentyapp/features/rentals/models/rental_model.dart';
+// <<<--- 1. IMPORTACIÓN AÑADIDA ---<<<
+import 'package:rentyapp/features/rentals/rentals_details/rental_details_view.dart';
 
 // --- Extensión para el Enum RentalStatus ---
 extension RentalStatusExtension on RentalStatus {
@@ -53,24 +55,40 @@ class RentalCardWidget extends StatelessWidget {
     required this.onPayNowPressed,
   }) : super(key: key);
 
+  // <<<--- 2. FUNCIÓN DE NAVEGACIÓN AÑADIDA ---<<<
+  /// Navega a la pantalla de detalles del alquiler.
+  void _navigateToDetails(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => RentalDetailsScreen(
+          rental: rental,
+          viewerRole: currentTab, // Pasa el rol actual del usuario
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12.0),
-      margin: const EdgeInsets.symmetric(vertical: 4.0), // Reducido el margen vertical
-      decoration: BoxDecoration(
-        color: const Color(0xFF2C2C2E),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildItemImage(),
-          const SizedBox(width: 16),
-          Expanded(child: _buildInfoColumn()),
-          const SizedBox(width: 8),
-          _buildActionsColumn(context),
-        ],
+    return GestureDetector(
+      onTap: () => _navigateToDetails(context), // Permite tocar toda la tarjeta para ver detalles
+      child: Container(
+        padding: const EdgeInsets.all(12.0),
+        margin: const EdgeInsets.symmetric(vertical: 4.0),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2C2C2E),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildItemImage(),
+            const SizedBox(width: 16),
+            Expanded(child: _buildInfoColumn()),
+            const SizedBox(width: 8),
+            _buildActionsColumn(context),
+          ],
+        ),
       ),
     );
   }
@@ -218,96 +236,73 @@ class RentalCardWidget extends StatelessWidget {
     );
   }
 
+  // <<<--- 3. LÓGICA DE BOTONES ACTUALIZADA ---<<<
   List<Widget> _buildActionButtons(BuildContext context) {
-    final bool isOngoingOrDelivering = rental.status == RentalStatus.ongoing ||
-        rental.status == RentalStatus.awaiting_delivery;
+    // Definimos un botón de detalles estándar para reutilizar.
+    final viewDetailsButton = _buildActionButton(
+      text: 'View Details',
+      onPressed: () => _navigateToDetails(context),
+      context: context,
+    );
+    final viewDetailsButtonSecondary = _buildActionButton(
+      text: 'View Details',
+      onPressed: () => _navigateToDetails(context),
+      context: context,
+      isSecondary: true,
+    );
+
+    // Simplificamos la lógica. La mayoría de los casos llevan a "View Details".
+    // Casos especiales (como "Pay Now") se manejan por separado.
 
     if (currentTab == 'renter') {
-      if (rental.status == RentalStatus.awaiting_payment) {
-        return [
-          _buildActionButton(
-            text: 'Pay Now',
-            onPressed: () {
-              onPayNowPressed(rental);
-            },
-            context: context,
-            color: Colors.green.shade600,
-          ),
-        ];
+      switch (rental.status) {
+        case RentalStatus.awaiting_payment:
+          return [
+            _buildActionButton(
+              text: 'Pay Now',
+              onPressed: () => onPayNowPressed(rental),
+              context: context,
+              color: Colors.green.shade600,
+            ),
+          ];
+        case RentalStatus.completed:
+          if (!rental.reviewedByRenter) {
+            return [
+              _buildActionButton(
+                text: 'Leave Review',
+                onPressed: () {
+                  _navigateToDetails(context); // Puede llevar a detalles para luego dejar reseña
+                },
+                context: context,
+                color: const Color(0xFF34C759),
+              )
+            ];
+          }
+          return [viewDetailsButtonSecondary]; // Si ya dejó reseña
+        case RentalStatus.ongoing:
+        case RentalStatus.awaiting_delivery:
+          return [viewDetailsButton]; // Botón principal
+        default:
+          return [viewDetailsButtonSecondary]; // Para 'cancelled', 'disputed', etc.
       }
-      if (isOngoingOrDelivering) {
-        return [
-          _buildActionButton(
-            text: 'View Details',
-            onPressed: () {
-              // TODO: Navegar a la pantalla de detalles del alquiler.
-            },
-            context: context,
-          ),
-        ];
-      } else {
-        if (rental.status == RentalStatus.completed && !rental.reviewedByRenter) {
-          return [
-            _buildActionButton(
-              text: 'Leave Review',
-              onPressed: () {
-                // TODO: Navegar a la pantalla para dejar una reseña.
-              },
-              context: context,
-              color: const Color(0xFF34C759),
-            )
-          ];
-        } else {
-          return [
-            _buildActionButton(
-              text: 'View Details',
-              onPressed: () {},
-              context: context,
-              isSecondary: true,
-            )
-          ];
-        }
-      }
-    }
-    else {
-      if (rental.status == RentalStatus.awaiting_payment) {
-        return [
-          _buildActionButton(
-            text: 'View Details',
-            onPressed: () {},
-            context: context,
-            isSecondary: true,
-          ),
-        ];
-      }
-      if (isOngoingOrDelivering) {
-        return [
-          _buildActionButton(
-            text: 'View Details',
-            onPressed: () {},
-            context: context,
-          ),
-        ];
-      } else {
-        if (rental.status == RentalStatus.completed || rental.status == RentalStatus.disputed) {
-          return [
-            _buildActionButton(
-              text: 'Report Issue',
-              onPressed: () {},
-              context: context,
-              color: const Color(0xFFFF3B30),
-            )
-          ];
-        } else {
-          return [
-            _buildActionButton(
-              text: 'View Details',
-              onPressed: () {},
-              context: context,
-              isSecondary: true,
-            )
-          ];
-        }
+    } else { // currentTab == 'owner'
+      switch (rental.status) {
+        case RentalStatus.completed:
+        case RentalStatus.disputed:
+          if (!rental.reviewedByOwner) { // Asumiendo que existe este campo
+            return [
+              _buildActionButton(
+                text: 'View Details', // Podría ser 'Leave Review' o 'Resolve Issue'
+                onPressed: () => _navigateToDetails(context),
+                context: context,
+              )
+            ];
+          }
+          return [viewDetailsButtonSecondary];
+        default:
+        // Para todos los demás estados (awaiting_payment, awaiting_delivery, ongoing)
+        // el dueño solo necesita ver los detalles.
+          return [viewDetailsButton];
       }
     }
   }
@@ -320,7 +315,8 @@ class RentalCardWidget extends StatelessWidget {
     bool isSecondary = false,
   }) {
     final bool isEnabled = onPressed != null;
-    final Color enabledColor = color ?? (isSecondary ? const Color(0xFF3A3A3C) : const Color(0xFF48484A));
+    final Color enabledColor =
+        color ?? (isSecondary ? const Color(0xFF3A3A3C) : const Color(0xFF48484A));
     final Color disabledColor = const Color(0xFF3A3A3C);
 
     return SizedBox(
@@ -331,9 +327,11 @@ class RentalCardWidget extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: isEnabled ? enabledColor : disabledColor,
           foregroundColor: isEnabled ? Colors.white : Colors.grey.shade600,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           padding: const EdgeInsets.symmetric(horizontal: 8),
-          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          textStyle:
+          const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
           elevation: 0,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),

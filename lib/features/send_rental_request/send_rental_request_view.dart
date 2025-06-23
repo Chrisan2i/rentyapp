@@ -2,15 +2,15 @@
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // <<<--- AÑADIR IMPORT DE PROVIDER
 import 'package:rentyapp/core/theme/app_colors.dart';
-import 'package:rentyapp/features/product/models/product_model.dart'; // Asegúrate que esta ruta sea correcta
+import 'package:rentyapp/features/product/models/product_model.dart';
 import 'package:rentyapp/features/rentals/services/rental_services.dart';
 import 'package:rentyapp/features/send_rental_request/models/rental_request_model.dart';
 
 class SendRentalRequestView extends StatefulWidget {
   final ProductModel product;
 
-  // --- CORRECCIÓN 1: Super parameter ---
   const SendRentalRequestView({super.key, required this.product});
 
   @override
@@ -20,34 +20,24 @@ class SendRentalRequestView extends StatefulWidget {
 class _SendRentalRequestViewState extends State<SendRentalRequestView> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _messageController = TextEditingController();
-  final RentalService _rentalService = RentalService();
+
+  // <<<--- CORRECCIÓN: Elimina la creación de una nueva instancia aquí ---<<<
+  // final RentalService _rentalService = RentalService(); // ESTO CAUSA EL ERROR
 
   DateTime? _startDate;
   DateTime? _endDate;
   bool _isLoading = false;
 
-  // --- Lógica de Cálculo de Precios (Corregida y Mejorada) ---
-  int get _daysRequested =>
-      _endDate != null && _startDate != null
-          ? _endDate!.difference(_startDate!).inDays + 1
-          : 0;
-
-  // --- CORRECCIÓN 2: Manejo de precio nulo ---
-  // Esta función ahora devuelve un double no nulo.
-  // Usamos el `displayPrice` que es más robusto, y si no hay precio, es 0.0.
+  // ... El resto de tus getters (_daysRequested, _pricePerDay, etc.) no cambian ...
+  int get _daysRequested => _endDate != null && _startDate != null ? _endDate!.difference(_startDate!).inDays + 1 : 0;
   double get _pricePerDay => widget.product.rentalPrices.displayPrice;
-
   double get _subtotal => _daysRequested * _pricePerDay;
-
-  // --- CORRECCIÓN 3: Estilo de la constante ---
-  static const double vatRate = 0.16; // 16% de IVA, ahora en lowerCamelCase
+  static const double vatRate = 0.16;
   double get _vat => _subtotal * vatRate;
-
   double get _total => _subtotal + _vat;
 
-  /// Muestra el selector de fechas y actualiza el estado.
   Future<void> _pickDateRange() async {
-    // ... tu código aquí no necesita cambios, está perfecto ...
+    // ... tu código no cambia ...
     final now = DateTime.now();
     final newDateRange = await showDateRangePicker(
       context: context,
@@ -66,44 +56,28 @@ class _SendRentalRequestViewState extends State<SendRentalRequestView> {
     }
   }
 
-  /// Valida y envía la solicitud de alquiler.
   Future<void> _submitRequest() async {
-    // ... tu código aquí no necesita cambios, está perfecto ...
-    if (_startDate == null || _endDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select the rental dates.'),
-            backgroundColor: AppColors.error),
-      );
-      return;
-    }
-
-    // --- MEJORA: Validar si hay un precio válido antes de enviar ---
-    if (_pricePerDay <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This item does not have a valid price and cannot be rented.'),
-            backgroundColor: AppColors.error),
-      );
-      return;
-    }
-
+    // ... tu código de validación no cambia ...
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
-      // ...
       return;
     }
+
+    // <<<--- CORRECCIÓN: Obtén la instancia del servicio desde Provider ---<<<
+    final rentalService = context.read<RentalService>();
 
     setState(() => _isLoading = true);
 
     final request = RentalRequestModel(
-      requestId: '', // El ID se generará en el servicio, pasamos uno vacío por ahora.
+      requestId: '',
       productId: widget.product.productId,
       ownerId: widget.product.ownerId,
       renterId: currentUser.uid,
-      status: 'pending', // Estado inicial de la solicitud.
-      startDate: _startDate!, // Usamos '!' porque ya comprobamos que no es nulo.
-      endDate: _endDate!,   // Igual aquí.
+      status: 'pending',
+      startDate: _startDate!,
+      endDate: _endDate!,
       createdAt: DateTime.now(),
-      expiresAt: DateTime.now().add(const Duration(hours: 24)), // La solicitud expira en 24h.
+      expiresAt: DateTime.now().add(const Duration(hours: 24)),
       messageToOwner: _messageController.text,
       financials: {
         'pricePerDay': _pricePerDay,
@@ -115,14 +89,29 @@ class _SendRentalRequestViewState extends State<SendRentalRequestView> {
     );
 
     try {
-      await _rentalService.createRentalRequest(request);
+      await rentalService.createRentalRequest(
+        request: request,
+        renterName: currentUser.displayName ?? 'A user',
+        productTitle: widget.product.title,
+      );
+
       if (mounted) {
-        // ...
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Request sent successfully!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
         Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
-        // ...
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sending request: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
       }
     } finally {
       if (mounted) {

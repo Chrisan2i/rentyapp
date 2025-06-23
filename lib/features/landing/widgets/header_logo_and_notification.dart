@@ -2,29 +2,27 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
-import 'package:rentyapp/core/controllers/controller.dart'; // <<<--- CORREGIDO a AppController
+import 'package:rentyapp/core/controllers/controller.dart';
+import 'package:rentyapp/features/notifications/notification_view.dart';
 
 class HeaderLogoAndNotification extends StatelessWidget {
   const HeaderLogoAndNotification({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // <<<--- CORRECCIÓN: Usamos AppController ---<<<
-    final appController = context.read<AppController>();
+    final appController = context.watch<AppController>(); // watch para redibujar si cambia
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Image.asset(
-          'assets/rentyapp.png', // Asegúrate que esta ruta es correcta
+          'assets/rentyapp.png',
           height: 45,
           fit: BoxFit.contain,
         ),
-        // <<<--- MEJORA: Usamos StreamBuilder para datos en tiempo real ---<<<
         StreamBuilder<int>(
-          // Nos suscribimos al stream de notificaciones no leídas del controlador
           stream: appController.unreadNotificationsCountStream,
-          initialData: 0, // Mostramos 0 mientras el stream se inicializa
+          initialData: 0,
           builder: (context, snapshot) {
             final count = snapshot.data ?? 0;
 
@@ -32,8 +30,15 @@ class HeaderLogoAndNotification extends StatelessWidget {
               alignment: Alignment.topRight,
               children: [
                 GestureDetector(
-                  // Llamamos al método correcto en AppController
-                  onTap: () => appController.clearAllNotifications(),
+                  // <<<--- 2. ACTUALIZA EL MÉTODO onTap ---<<<
+                  onTap: () {
+                    // Navega a la pantalla de notificaciones
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const NotificationScreen(),
+                      ),
+                    );
+                  },
                   child: Container(
                     width: 40,
                     height: 40,
@@ -44,7 +49,6 @@ class HeaderLogoAndNotification extends StatelessWidget {
                     child: const Icon(Icons.notifications_none, color: AppColors.white),
                   ),
                 ),
-                // El punto rojo solo aparece si el contador es mayor que 0
                 if (count > 0)
                   Positioned(
                     right: 6,

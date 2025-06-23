@@ -1,4 +1,4 @@
-// ARCHIVO: lib/features/rentals/rental_requests_view.dart
+// lib/features/rentals/rental_requests_view.dart
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -16,18 +16,22 @@ class RentalRequestsView extends StatefulWidget {
 }
 
 class _RentalRequestsViewState extends State<RentalRequestsView> {
-  final RentalService _rentalService = RentalService();
+  // <<<--- CORRECCIÓN: Elimina la creación de una nueva instancia aquí ---<<<
+  // final RentalService _rentalService = RentalService();
+
   String? _currentUserId;
 
   @override
   void initState() {
     super.initState();
-    // Obtenemos el userId del AppController de forma segura
     _currentUserId = Provider.of<AppController>(context, listen: false).currentUser?.userId;
   }
 
   @override
   Widget build(BuildContext context) {
+    // <<<--- CORRECCIÓN: Obtén la instancia del servicio desde Provider ---<<<
+    final rentalService = context.watch<RentalService>();
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -42,7 +46,8 @@ class _RentalRequestsViewState extends State<RentalRequestsView> {
       body: _currentUserId == null
           ? const Center(child: Text("Please log in to see your requests.", style: TextStyle(color: Colors.white)))
           : StreamBuilder<List<RentalRequestModel>>(
-        stream: _rentalService.getRentalRequestsForOwner(_currentUserId!),
+        // Usa la instancia del provider
+        stream: rentalService.getRentalRequestsForOwner(_currentUserId!),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator(color: AppColors.primary));
@@ -59,7 +64,6 @@ class _RentalRequestsViewState extends State<RentalRequestsView> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             itemCount: requests.length,
             itemBuilder: (context, index) {
-              // La tarjeta se encargará de buscar los datos del producto y del arrendatario.
               return RentalRequestCard(request: requests[index]);
             },
           );

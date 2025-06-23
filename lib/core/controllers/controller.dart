@@ -7,7 +7,7 @@ import 'package:rentyapp/features/auth/models/user_model.dart'; // Ajusta las ru
 import 'package:rentyapp/features/rentals/models/rental_model.dart';
 import 'package:rentyapp/features/auth/services/auth_service.dart';
 import 'package:rentyapp/features/rentals/services/rental_services.dart';
-import 'package:rentyapp/models/notification_service.dart';
+import 'package:rentyapp/features/notifications/service/notification_service.dart';
 
 // El enum ViewState no cambia, está perfecto.
 enum ViewState { idle, loading, error }

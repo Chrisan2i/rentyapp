@@ -1,8 +1,9 @@
-// ARCHIVO: lib/features/rentals/widgets/rental_request_card.dart
+// lib/features/rentals/widgets/rental_request_card.dart
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
 import 'package:rentyapp/features/auth/models/user_model.dart';
 import 'package:rentyapp/features/product/models/product_model.dart';
@@ -20,7 +21,9 @@ class RentalRequestCard extends StatefulWidget {
 }
 
 class _RentalRequestCardState extends State<RentalRequestCard> {
-  final RentalService _rentalService = RentalService();
+  // <<<--- CORRECCIÓN: Elimina la creación de una nueva instancia aquí ---<<<
+  // final RentalService _rentalService = RentalService();
+
   late final Future<Map<String, dynamic>> _cardDataFuture;
 
   @override
@@ -30,18 +33,16 @@ class _RentalRequestCardState extends State<RentalRequestCard> {
   }
 
   Future<Map<String, dynamic>> _fetchCardData() async {
+    // ... este método no cambia, está perfecto ...
     final results = await Future.wait([
       FirebaseFirestore.instance.collection('products').doc(widget.request.productId).get(),
       FirebaseFirestore.instance.collection('users').doc(widget.request.renterId).get(),
     ]);
-
     final productDoc = results[0] as DocumentSnapshot<Map<String, dynamic>>;
     final renterDoc = results[1] as DocumentSnapshot<Map<String, dynamic>>;
-
     if (!productDoc.exists || !renterDoc.exists) {
       throw Exception("Product or Renter not found for request ${widget.request.requestId}");
     }
-
     return {
       'product': ProductModel.fromMap(productDoc.data()!, productDoc.id),
       'renter': UserModel.fromMap(renterDoc.data()!, renterDoc.id),
@@ -62,10 +63,7 @@ class _RentalRequestCardState extends State<RentalRequestCard> {
   }
 
   void _acceptRequest() async {
-    // <<<--- CORRECCIÓN 1: Se pasa el objeto completo 'request' ---<<<
-    // El servicio necesita el objeto completo para crear el nuevo documento "rental".
-    // La firma del método en tu servicio probablemente es: acceptRentalRequest(RentalRequestModel request)
-    await _rentalService.acceptRentalRequest(widget.request);
+    await context.read<RentalService>().acceptRentalRequest(widget.request);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -76,10 +74,7 @@ class _RentalRequestCardState extends State<RentalRequestCard> {
   }
 
   void _declineRequest() async {
-    // <<<--- CORRECCIÓN 2: Se pasa el ID de la solicitud (asumiendo que este método sí espera un String) ---<<<
-    // Para rechazar, generalmente solo necesitas el ID para actualizar el estado del documento.
-    // Si este también da error, cámbialo a `_rentalService.declineRentalRequest(widget.request);`
-    await _rentalService.declineRentalRequest(widget.request.requestId);
+    await context.read<RentalService>().declineRentalRequest(widget.request.requestId);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(

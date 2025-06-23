@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
 import 'package:rentyapp/core/theme/app_text_styles.dart';
-import 'package:rentyapp/features/rental_request/rental_requests_view.dart';
+import 'package:rentyapp/features/rentals/rental_request/rental_requests_view.dart';
 
 class ProfileActionsSection extends StatelessWidget {
   final int pendingRequestsCount;

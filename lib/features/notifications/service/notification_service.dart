@@ -1,9 +1,23 @@
 // lib/features/notifications/services/notification_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'notification_model.dart';
+import '../model/notification_model.dart';
 
 class NotificationService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  Future<void> sendNotification({
+    required String userId, // El ID del usuario que recibirá la notificación
+    required NotificationModel notification,
+  }) async {
+    try {
+      // .add() generará un ID único para la notificación automáticamente.
+      await _notificationsRef(userId).add(notification);
+    } catch (e) {
+      print("❌ Error al enviar la notificación: $e");
+      // Opcional: puedes re-lanzar el error si quieres manejarlo más arriba.
+      // throw e;
+    }
+  }
 
   CollectionReference<NotificationModel> _notificationsRef(String userId) {
     return _db

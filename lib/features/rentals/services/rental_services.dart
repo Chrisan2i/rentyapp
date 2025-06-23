@@ -7,21 +7,56 @@ import 'package:rentyapp/features/auth/models/user_model.dart';
 import 'package:rentyapp/features/product/models/product_model.dart';
 import 'package:rentyapp/features/send_rental_request/models/rental_request_model.dart';
 import 'package:rentyapp/features/rentals/models/rental_model.dart';
+import 'package:rentyapp/features/notifications/model/notification_model.dart';
+import 'package:rentyapp/features/notifications/service/notification_service.dart';
 
 class RentalService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final NotificationService _notificationService;
 
-  // =======================================================================
-  // GESTIÓN DE SOLICITUDES DE ALQUILER (REQUESTS)
-  // =======================================================================
+  RentalService({required NotificationService notificationService})
+      : _notificationService = notificationService;
 
-  /// Crea una nueva solicitud de alquiler en Firestore.
-  Future<void> createRentalRequest(RentalRequestModel request) async {
+  Future<void> createRentalRequest({
+    required RentalRequestModel request,
+    required String renterName,    // Nombre del que solicita
+    required String productTitle,  // Título del producto para el cuerpo de la notificación
+  }) async {
     try {
-      await _db.collection('rentalRequests').add(request.toMap());
+      // 1. Crea el documento de la solicitud de alquiler
+      // .add() crea el documento y devuelve una referencia a él.
+      final docRef = await _db.collection('rentalRequests').add(request.toMap());
+      final newRequestId = docRef.id;
+
+      // (Opcional pero recomendado) Actualiza el documento recién creado para que contenga su propio ID.
+      await docRef.update({'requestId': newRequestId});
+
+
+      // 2. <<<--- LÓGICA PARA CREAR Y ENVIAR LA NOTIFICACIÓN ---<<<
+      // Prepara el modelo de la notificación.
+      final notificationToSend = NotificationModel(
+        notificationId: '', // Firestore generará el ID automáticamente
+        type: NotificationType.new_rental_request,
+        title: 'You have a new rental request!',
+        body: '$renterName wants to rent your product: "$productTitle".',
+        createdAt: DateTime.now(),
+        isRead: false,
+        metadata: {
+          'type': 'rental_request', // Para saber qué pantalla abrir al tocar
+          'rentalRequestId': newRequestId, // ID para navegar a la solicitud específica
+          'productId': request.productId,
+        },
+      );
+
+      // 3. Usa el servicio de notificaciones para enviarla al dueño del producto.
+      await _notificationService.sendNotification(
+        userId: request.ownerId,
+        notification: notificationToSend,
+      );
+
     } catch (e) {
-      debugPrint("❌ Error al crear la solicitud de alquiler: $e");
-      rethrow; // Propaga el error para que el controlador lo maneje.
+      debugPrint("❌ Error al crear la solicitud de alquiler y/o la notificación: $e");
+      rethrow; // Propaga el error para que la UI lo maneje.
     }
   }
 
@@ -80,7 +115,7 @@ class RentalService {
         // --- PASO 3: CREAR EL NUEVO RENTALMODEL ---
         final newRental = RentalModel(
           rentalId: newRentalRef.id,
-          status: RentalStatus.awaiting_delivery, // El estado inicial correcto
+          status: RentalStatus.awaiting_payment, // El estado inicial correcto
           productInfo: productInfo,
           ownerInfo: ownerInfo,
           renterInfo: renterInfo,
@@ -142,21 +177,34 @@ class RentalService {
     }
   }
   Future<void> confirmAndPayRental(String rentalId) async {
-    // 1. Simula una llamada de red a tu backend/cloud function.
-    print('Procesando pago para el alquiler: $rentalId...');
-    await Future.delayed(const Duration(seconds: 2));
+    // 1. Muestra en consola que el proceso ha comenzado (útil para depuración).
+    debugPrint('Procesando pago y confirmación para el alquiler: $rentalId...');
 
-    // 2. En tu backend real, harías lo siguiente:
-    //    - Procesar el pago con Stripe.
-    //    - Si es exitoso, actualizar el documento de alquiler en Firestore.
-    //      await FirebaseFirestore.instance.collection('rentals').doc(rentalId).update({
-    //        'status': RentalStatus.awaiting_delivery.name,
-    //      });
-    print('Pago completado. Actualizando estado a awaiting_delivery.');
+    try {
+      // 2. Obtiene la referencia directa al documento del alquiler en Firestore.
+      final rentalDocRef = _db.collection('rentals').doc(rentalId);
 
-    // 3. Simula un posible error de red o de pago.
-    // if (some_error_condition) {
-    //   throw Exception("El pago no pudo ser procesado. Intente de nuevo.");
-    // }
+      // 3. Aquí es donde se realiza la lógica de pago real en un futuro (ej. con Stripe).
+      // Por ahora, asumimos que el pago es exitoso y procedemos a actualizar la base de datos.
+
+      // 4. <<<--- ESTA ES LA ACTUALIZACIÓN CLAVE ---<<<
+      // Se actualiza el campo 'status' del documento al nuevo estado.
+      // Usamos .name para guardar el valor del enum como un String ('awaiting_delivery').
+      await rentalDocRef.update({
+        'status': RentalStatus.awaiting_delivery.name,
+      });
+
+      debugPrint('Éxito: El estado del alquiler $rentalId ha sido actualizado a awaiting_delivery.');
+
+    } on FirebaseException catch (e) {
+      // 5. Captura errores específicos de Firebase (ej. permisos, no encontrado).
+      debugPrint("Error de Firestore al actualizar el alquiler: ${e.message}");
+      // Re-lanza el error para que el controlador lo capture y muestre un mensaje al usuario.
+      throw Exception("No se pudo confirmar el alquiler. Por favor, intenta de nuevo.");
+    } catch (e) {
+      // 6. Captura cualquier otro error inesperado.
+      debugPrint("Error inesperado en confirmAndPayRental: ${e.toString()}");
+      throw Exception("Ocurrió un error inesperado. Por favor, intenta de nuevo.");
+    }
   }
 }
