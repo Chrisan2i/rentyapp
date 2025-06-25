@@ -1,6 +1,5 @@
-// lib/core/widgets/action_button.dart (Recordatorio)
+// lib/features/add_product/widgets/action_button.dart
 import 'package:flutter/material.dart';
-// import 'package:rentyapp/core/theme/app_colors.dart'; // Asegúrate de tener tus colores
 
 class ActionButton extends StatelessWidget {
   final String text;
@@ -15,6 +14,7 @@ class ActionButton extends StatelessWidget {
     required this.text,
     this.onPressed,
     this.isLoading = false,
+    /// Determines the button's style. `true` for primary action, `false` for secondary.
     this.isPrimary = true,
     this.width,
     this.height = 56,
@@ -23,11 +23,11 @@ class ActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isEnabled = onPressed != null && !isLoading;
-    final Color primaryColor = const Color(0xFF0085FF); // Color de ejemplo
+    final Color primaryColor = const Color(0xFF0085FF);
     final Color surfaceColor = Colors.white.withOpacity(0.1);
 
     return SizedBox(
-      width: width ?? MediaQuery.of(context).size.width * 0.9,
+      width: width,
       height: height,
       child: ElevatedButton(
         onPressed: isEnabled ? onPressed : null,
@@ -39,7 +39,7 @@ class ActionButton extends StatelessWidget {
               : surfaceColor.withOpacity(0.5),
           disabledForegroundColor: Colors.white.withOpacity(0.7),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          elevation: isEnabled ? 8 : 0,
+          elevation: isEnabled && isPrimary ? 8 : 0,
           shadowColor: isPrimary ? primaryColor.withOpacity(0.3) : Colors.transparent,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           textStyle: const TextStyle(

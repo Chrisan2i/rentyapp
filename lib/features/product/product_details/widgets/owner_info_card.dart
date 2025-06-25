@@ -1,26 +1,28 @@
 // lib/features/product/widgets/owner_info_card.dart
 
 import 'package:flutter/material.dart';
-// import 'package:cached_network_image/cached_network_image.dart'; // YA NO LO NECESITAMOS
 import 'package:rentyapp/core/theme/app_colors.dart';
 import 'package:rentyapp/features/auth/models/user_model.dart';
-import '../../../../core/widgets/custom_network_image.dart'; // ¡IMPORTA NUESTRO WIDGET!
+import '../../../../core/widgets/custom_network_image.dart';
 import 'section_card.dart';
 
+/// A card displaying information about the item's owner.
+/// Includes a placeholder state for loading.
 class OwnerInfoCard extends StatelessWidget {
-  // ... (el resto del widget no cambia)
   final UserModel? ownerInfo;
   final bool isPlaceholder;
 
+  /// Creates a card with the owner's information.
   const OwnerInfoCard({
     super.key,
     required this.ownerInfo,
   }) : isPlaceholder = false;
 
+  /// Creates a placeholder version of the card, used during data loading.
+  /// This pattern prevents layout shifts.
   const OwnerInfoCard.placeholder({super.key})
       : ownerInfo = null,
         isPlaceholder = true;
-
 
   @override
   Widget build(BuildContext context) {
@@ -39,18 +41,14 @@ class OwnerInfoCard extends StatelessWidget {
             radius: 24,
             backgroundColor: AppColors.surface,
             child: ClipOval(
-              // --- AQUÍ ESTÁ EL CAMBIO ---
-              // Usamos nuestro widget personalizado
               child: CustomNetworkImage(
                 imageUrl: owner.profileImageUrl,
                 fit: BoxFit.cover,
                 width: 48,
                 height: 48,
-                // Le pasamos un placeholder personalizado
                 placeholder: (context) => const Center(
                   child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
                 ),
-                // Y un error widget personalizado que muestra las iniciales
                 errorWidget: (context, error) => Center(
                   child: Text(
                     ownerInitials,
@@ -60,7 +58,6 @@ class OwnerInfoCard extends StatelessWidget {
               ),
             ),
           ),
-          // ... el resto del widget no cambia ...
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -85,13 +82,13 @@ class OwnerInfoCard extends StatelessWidget {
             ),
           ),
           if (owner.verificationStatus != VerificationStatus.notVerified)
-            const Icon(Icons.verified_user, color: AppColors.primary, size: 24),
+            const Icon(Icons.verified, color: AppColors.primary, size: 24),
         ],
       ),
     );
   }
 
-  // ... (el método _buildPlaceholder no cambia)
+  /// Builds the placeholder skeleton for the card.
   Widget _buildPlaceholder() {
     return SectionCard(
       title: 'Owner Information',

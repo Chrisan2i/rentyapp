@@ -34,11 +34,12 @@ class RentalDetailsScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Rental Details', style: TextStyle(color: Colors.white)),
+        // ✨ MEJORA: Texto en español
+        title: const Text('Detalles del Alquiler', style: TextStyle(color: Colors.white)),
         actions: [
           IconButton(
             icon: const Icon(Icons.share_outlined, color: Colors.white),
-            onPressed: () { /* TODO: Implementar lógica para compartir */ },
+            onPressed: () { /* TODO: Implement share logic */ },
           ),
         ],
       ),
@@ -46,7 +47,7 @@ class RentalDetailsScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Usa los widgets públicos importados
+            // Los widgets importados reflejarán automáticamente las mejoras
             ProductSummaryCard(rental: rental, isRenterView: isRenterView),
             const SizedBox(height: 16),
             PartyInfoCard(rental: rental, isRenterView: isRenterView),
@@ -55,10 +56,17 @@ class RentalDetailsScreen extends StatelessWidget {
             const SizedBox(height: 16),
             FinancialsBreakdownCard(rental: rental, isRenterView: isRenterView),
             const SizedBox(height: 16),
-            if (!isRenterView) RentalTimelineWidget(rental: rental),
+            // La línea de tiempo solo se muestra para el dueño (owner)
+            if (!isRenterView) ...[
+              RentalTimelineWidget(rental: rental),
+              const SizedBox(height: 16),
+            ],
+            // ✨ MEJORA: Espacio extra al final para que no se pegue al bottom bar.
+            const SizedBox(height: 16),
           ],
         ),
       ),
+      // La barra de acciones ya está modularizada y mejorada
       bottomNavigationBar: ActionButtons(rental: rental, isRenterView: isRenterView),
     );
   }

@@ -1,4 +1,4 @@
-// ARCHIVO: lib/features/profile/widgets/profile_header.dart
+// lib/features/profile/widgets/profile_header.dart
 
 import 'package:flutter/material.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
@@ -10,24 +10,23 @@ class ProfileHeader extends StatelessWidget {
   final UserModel user;
   const ProfileHeader({super.key, required this.user});
 
+  // ✨ MEJORA: Textos de verificación en español
   String _getVerificationText(VerificationStatus status) {
     switch (status) {
       case VerificationStatus.level1_basic:
-        return 'Level 1 Verified';
+        return 'Verificado Nivel 1';
       case VerificationStatus.level2_plus:
-        return 'Plus Verified';
+        return 'Verificado Plus';
       case VerificationStatus.notVerified:
-      // CORRECCIÓN: El 'default' era redundante porque todos los casos del enum estaban cubiertos.
         return '';
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final String userInitials = user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : '?';
+    final String userInitials = user.fullName.isNotEmpty ? user.fullName.split(' ').map((e) => e[0]).take(2).join() : '?';
     final String verificationText = _getVerificationText(user.verificationStatus);
-
-    final String userBio = "Digital nomad exploring the world. Passionate about tech and photography.";
+    final String userBio = "Nómada digital explorando el mundo. Apasionado por la tecnología y la fotografía.";
 
     return Column(
       children: [
@@ -61,30 +60,26 @@ class ProfileHeader extends StatelessWidget {
             const SizedBox(width: 4),
             Text(user.rating.toStringAsFixed(1), style: AppTextStyles.inputLabel),
             const SizedBox(width: 4),
-            Text('(${user.totalReviews} reviews)', style: AppTextStyles.subtitle),
+            // ✨ MEJORA: Texto en español
+            Text('(${user.totalReviews} reseñas)', style: AppTextStyles.subtitle),
           ],
         ),
         const SizedBox(height: 16),
-
         if (userBio.isNotEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Text(
               userBio,
               textAlign: TextAlign.center,
-              // CORRECCIÓN: Este estilo ahora existe en AppTextStyles.
               style: AppTextStyles.body,
             ),
           ),
-
         const SizedBox(height: 20),
-
         if (verificationText.isNotEmpty)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              // CORRECCIÓN: Se usa .withAlpha() en lugar del obsoleto .withOpacity().
-              color: AppColors.primary.withAlpha(38), // 255 * 0.15 = 38.25
+              color: AppColors.primary.withOpacity(0.15),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: AppColors.primary, width: 1),
             ),

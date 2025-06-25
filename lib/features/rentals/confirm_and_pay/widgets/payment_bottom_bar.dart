@@ -1,3 +1,5 @@
+// lib/features/rentals/views/widgets/payment_bottom_bar.dart
+
 import 'package:flutter/material.dart';
 
 class PaymentBottomBar extends StatelessWidget {
@@ -16,7 +18,11 @@ class PaymentBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isButtonEnabled = !isLoading && isTermsAgreed;
+
     return Container(
+      // ✨ MEJORA: Aumenta el padding inferior para mejor separación en móviles modernos.
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       decoration: const BoxDecoration(
         color: Color(0xFF121212),
@@ -30,23 +36,35 @@ class PaymentBottomBar extends StatelessWidget {
             height: 50,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                disabledBackgroundColor: Colors.grey.shade600,
+                // ✨ MEJORA: Estilo más refinado y consistente con el tema.
+                backgroundColor: Colors.blueAccent,
+                disabledBackgroundColor: Colors.grey.shade800,
+                disabledForegroundColor: Colors.grey.shade500,
+                foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
               ),
-              onPressed: (isLoading || !isTermsAgreed) ? null : onPayPressed,
+              onPressed: isButtonEnabled ? onPayPressed : null,
               child: isLoading
-                  ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white))
+                  ? const SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white))
                   : Text(
-                'Pay \$${totalAmount.toStringAsFixed(2)} and Confirm Rental',
-                style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+                // ✨ MEJORA: Texto en español.
+                'Pagar \$${totalAmount.toStringAsFixed(2)} y Confirmar',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
           const SizedBox(height: 12),
           Text(
-            'Secure payment powered by Stripe • Your card details are encrypted',
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+            // ✨ MEJORA: Texto en español.
+            'Pago seguro con Stripe • Tus datos están encriptados',
+            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
             textAlign: TextAlign.center,
           )
         ],

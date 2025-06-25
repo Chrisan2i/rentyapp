@@ -3,13 +3,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
-import 'package:rentyapp/features/auth/models/user_model.dart'; // Ajusta las rutas si es necesario
+import 'package:rentyapp/features/auth/models/user_model.dart';
 import 'package:rentyapp/features/rentals/models/rental_model.dart';
 import 'package:rentyapp/features/auth/services/auth_service.dart';
 import 'package:rentyapp/features/rentals/services/rental_services.dart';
 import 'package:rentyapp/features/notifications/service/notification_service.dart';
 
-// El enum ViewState no cambia, está perfecto.
 enum ViewState { idle, loading, error }
 
 /// Controlador principal de la aplicación. Orquesta los servicios y gestiona el estado global.
@@ -26,7 +25,6 @@ class AppController with ChangeNotifier {
   List<RentalModel> _rentals = [];
   List<RentalModel> get rentals => _rentals;
 
-  // --- MEJORA: Añadimos estado para los mensajes de error ---
   String _userErrorMessage = '';
   String get userErrorMessage => _userErrorMessage;
 
@@ -34,7 +32,7 @@ class AppController with ChangeNotifier {
   String get rentalsErrorMessage => _rentalsErrorMessage;
 
   // Estados de carga (ViewState)
-  ViewState _userState = ViewState.loading; // Empieza en loading para el arranque inicial
+  ViewState _userState = ViewState.loading;
   ViewState get userState => _userState;
 
   ViewState _rentalsState = ViewState.idle;
@@ -58,13 +56,10 @@ class AppController with ChangeNotifier {
     _authSubscription = _authService.authStateChanges.listen(_onAuthStateChanged);
   }
 
-  /// Se ejecuta cuando el estado de autenticación del usuario cambia.
   Future<void> _onAuthStateChanged(auth.User? firebaseUser) async {
     if (firebaseUser != null) {
-      // Si el usuario de Firebase existe, usamos su UID para cargar nuestros datos.
       await fetchCurrentUser(uid: firebaseUser.uid);
     } else {
-      // Si es nulo, el usuario ha cerrado sesión.
       _clearUserState();
     }
   }
@@ -77,17 +72,14 @@ class AppController with ChangeNotifier {
     notifyListeners();
   }
 
-  // --- STREAMS (No necesitan cambios, están bien) ---
+  // --- STREAMS ---
   Stream<int> get pendingRequestsCountStream =>
       _currentUser != null ? _rentalService.getPendingRentalRequestsCount(_currentUser!.userId) : Stream.value(0);
 
   Stream<int> get unreadNotificationsCountStream =>
       _currentUser != null ? _notificationService.getUnreadNotificationsCount(_currentUser!.userId) : Stream.value(0);
 
-  // --- MÉTODOS PÚBLICOS PARA LA UI ---
-
-  /// --- MEJORA: Método público para reintentar la carga ---
-  /// Este es el método que llamará el botón "Try Again" desde la ProfileView.
+  // --- MÉTODOS DE DATOS ---
   Future<void> fetchCurrentUser({String? uid}) async {
     final userId = uid ?? _currentUser?.userId;
     if (userId == null) {
@@ -104,7 +96,7 @@ class AppController with ChangeNotifier {
       _currentUser = await _authService.getUserData(userId);
       if (_currentUser != null) {
         _userState = ViewState.idle;
-        await fetchUserRentals(); // Carga los alquileres después de cargar el usuario
+        await fetchUserRentals();
       } else {
         throw Exception("User data not found in Firestore.");
       }
@@ -139,10 +131,10 @@ class AppController with ChangeNotifier {
     if (_currentUser == null) throw Exception("User not authenticated.");
     try {
       await _authService.updateUserProfile(_currentUser!.userId, newData);
-      await fetchCurrentUser(); // Recarga los datos del usuario para reflejar los cambios
+      await fetchCurrentUser();
     } catch (e) {
       debugPrint('❌ Error al actualizar perfil: $e');
-      rethrow; // Lanza el error para que la UI de edición de perfil pueda manejarlo
+      rethrow;
     }
   }
 
@@ -155,16 +147,40 @@ class AppController with ChangeNotifier {
     }
   }
 
-  // --- NAVEGACIÓN DE LA UI (No necesita cambios) ---
+  // --- NAVEGACIÓN DE LA UI Y ESTADO TRANSITORIO ---
+
+  // Estado para la barra de navegación principal
   int _selectedIndex = 0;
   int get selectedIndex => _selectedIndex;
 
+  // <<<--- CAMBIO: Estado para guardar el filtro inicial al navegar ---<<<
+  Map<String, dynamic>? _initialSearchFilter;
+  Map<String, dynamic>? get initialSearchFilter => _initialSearchFilter;
+
+  /// Cambia la pestaña activa en la barra de navegación.
   void setSelectedIndex(int index) {
     if (_selectedIndex != index) {
       _selectedIndex = index;
       notifyListeners();
     }
   }
+
+  /// <<<--- CAMBIO: Guarda un filtro para que la SearchScreen lo use al iniciar ---<<<
+  ///
+  /// Este método guarda el filtro pero NO notifica a los listeners.
+  /// La idea es que la SearchScreen lo lea una sola vez cuando se construya.
+  void setInitialSearchFilter(Map<String, dynamic> filter) {
+    _initialSearchFilter = filter;
+  }
+
+  /// <<<--- CAMBIO: Limpia el filtro inicial después de que ha sido usado ---<<<
+  ///
+  /// Esto previene que el filtro se aplique de nuevo si el usuario
+  /// navega a otra pestaña y luego regresa a la de búsqueda.
+  void clearInitialSearchFilter() {
+    _initialSearchFilter = null;
+  }
+
 
   @override
   void dispose() {

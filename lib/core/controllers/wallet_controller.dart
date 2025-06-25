@@ -1,4 +1,4 @@
-// lib/features/earnings/controllers/wallet_controller.dart
+// lib/features/earnings/controllers/wallet_controller.dart (o donde lo tengas)
 
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,184 +7,124 @@ import 'package:rentyapp/features/auth/models/payment_method.dart';
 import 'package:rentyapp/features/auth/models/payout_destination_model.dart';
 import 'package:rentyapp/features/auth/models/transaction_model.dart';
 
+// --- ESTADO DE LA VISTA (View State) ---
+// Usar un enum para el estado hace el código más legible y menos propenso a errores.
+enum WalletState { initial, loading, loaded, error }
+
 class WalletController with ChangeNotifier {
   final FirebaseFirestore _db;
   final FirebaseAuth _auth;
-
-  /// ID del usuario actualmente autenticado. Es `null` si no hay sesión activa.
   String? _userId;
 
-  // --- ESTADOS DE LA UI ---
+  // --- ESTADO DEL CONTROLADOR ---
+  WalletState _state = WalletState.initial;
+  WalletState get state => _state;
 
-  /// Indica si hay una operación principal en curso (ej. carga inicial).
-  bool _isLoading = false;
-  bool get isLoading => _isLoading;
-
-  /// Indica si una operación secundaria está en curso (ej. agregar una tarjeta).
   bool _isAddingPaymentMethod = false;
   bool get isAddingPaymentMethod => _isAddingPaymentMethod;
 
-  /// Almacena el último mensaje de error para mostrarlo en la UI.
   String? _error;
   String? get error => _error;
 
   // --- DATOS DE LA BILLETERA ---
-
-  /// Lista de métodos de pago del usuario (tarjetas, etc.).
   List<PaymentMethodModel> paymentMethods = [];
-
-  /// Lista de destinos de pago del usuario (cuentas bancarias, etc.).
   List<PayoutDestinationModel> payoutMethods = [];
+  List<TransactionModel> transactions = [];
+  Map<String, double> walletStats = {};
 
-  // --- FUTURES PARA FUTUREBUILDERS ---
-  // Estos son ideales para partes de la UI que solo necesitan cargarse una vez.
-
-  /// Future que resuelve la lista de transacciones del usuario.
-  late Future<List<TransactionModel>> userTransactions;
-
-  /// Future que resuelve las estadísticas de la billetera (saldos).
-  late Future<Map<String, double>> walletStats;
-
-  /// Constructor que inicializa las dependencias.
-  /// Provee instancias por defecto si no se inyectan unas específicas (útil para producción).
   WalletController({FirebaseAuth? auth, FirebaseFirestore? db})
       : _auth = auth ?? FirebaseAuth.instance,
         _db = db ?? FirebaseFirestore.instance {
-    // Inicializa los Futures con un valor por defecto para evitar errores antes de la carga.
-    userTransactions = Future.value([]);
-    walletStats = Future.value({});
-
-    // Inicia el proceso de carga de datos.
     initialize();
   }
 
-  /// Inicializa el controlador obteniendo el ID del usuario y cargando todos los datos asociados.
-  /// Este método debe ser llamado desde la UI después de que el controlador es creado.
   void initialize() {
-    _userId = _auth.currentUser?.uid;
+    // Escucha los cambios de autenticación. Si el usuario cambia, se recargan los datos.
+    _auth.authStateChanges().listen((user) {
+      if (user != null && user.uid != _userId) {
+        _userId = user.uid;
+        fetchWalletData();
+      } else if (user == null) {
+        _resetState();
+      }
+    });
 
+    // Carga inicial si ya hay un usuario logueado al crear el controller.
+    if (_auth.currentUser != null) {
+      _userId = _auth.currentUser!.uid;
+      fetchWalletData();
+    }
+  }
+
+  /// Carga o recarga todos los datos de la billetera del usuario.
+  Future<void> fetchWalletData() async {
     if (_userId == null) {
-      _setError("Usuario no autenticado. Por favor, inicie sesión.");
-      // Se asegura que los Futures no fallen y devuelvan valores vacíos.
-      userTransactions = Future.value([]);
-      walletStats = Future.value({});
-      notifyListeners();
+      _setError("Usuario no autenticado.");
       return;
     }
 
-    // Si el usuario está logueado, se inician las cargas de datos.
-    fetchWalletData();
-  }
+    _setState(WalletState.loading);
 
-  /// Orquesta la carga de todos los datos de la billetera.
-  void fetchWalletData() {
-    if (_userId == null) return;
+    try {
+      // Usamos Future.wait para ejecutar todas las cargas en paralelo. Es más eficiente.
+      final results = await Future.wait([
+        _fetchUserTransactions(),
+        _fetchWalletStats(),
+        _fetchPaymentMethods(),
+        _fetchPayoutMethods(),
+      ]);
 
-    _setLoading(true);
-    _setError(null);
+      // Asignamos los resultados a nuestras variables de estado.
+      transactions = results[0] as List<TransactionModel>;
+      walletStats = results[1] as Map<String, double>;
+      paymentMethods = results[2] as List<PaymentMethodModel>;
+      payoutMethods = results[3] as List<PayoutDestinationModel>;
 
-    // Asigna los futures para que los FutureBuilders en la UI se reconstruyan y muestren un loader.
-    userTransactions = _fetchUserTransactions();
-    walletStats = _fetchWalletStats();
+      _setError(null); // Limpiamos cualquier error previo
+      _setState(WalletState.loaded);
 
-    // Estas cargas actualizan listas que son consumidas por `Consumer` o `Selector`.
-    _fetchPaymentMethods();
-    _fetchPayoutMethods();
-
-    // Una vez que todos los futures son asignados y las cargas iniciales comienzan,
-    // se puede quitar el loading principal. Los FutureBuilders manejarán su propio estado.
-    _setLoading(false);
+    } catch (e) {
+      debugPrint("❌ Error al cargar datos de la billetera: $e");
+      _setError("No se pudieron cargar los datos de la billetera. Inténtalo de nuevo.");
+      _setState(WalletState.error);
+    }
   }
 
   // --- MÉTODOS PRIVADOS DE OBTENCIÓN DE DATOS (DATA FETCHING) ---
+  // Ahora devuelven Futures, perfectos para Future.wait
 
   Future<List<TransactionModel>> _fetchUserTransactions() async {
-    if (_userId == null) return [];
-    try {
-      final snapshot = await _db
-          .collection('users')
-          .doc(_userId)
-          .collection('transactions')
-          .orderBy('createdAt', descending: true)
-          .limit(20)
-          .get();
-      return snapshot.docs
-          .map((doc) => TransactionModel.fromMap(doc.data(), doc.id))
-          .toList();
-    } catch (e) {
-      debugPrint("Error al cargar transacciones: $e");
-      _setError("No se pudieron cargar las transacciones.");
-      return []; // Devuelve lista vacía en caso de error.
-    }
+    final snapshot = await _db
+        .collection('users').doc(_userId).collection('transactions')
+        .orderBy('createdAt', descending: true).limit(20).get();
+    return snapshot.docs.map((doc) => TransactionModel.fromMap(doc.data(), doc.id)).toList();
   }
 
   Future<Map<String, double>> _fetchWalletStats() async {
-    if (_userId == null) return {};
-    try {
-      final userDoc = await _db.collection('users').doc(_userId).get();
-      if (!userDoc.exists) {
-        // Si el documento del usuario no existe, devolvemos valores por defecto.
-        return {'available': 0.0, 'pending': 0.0, 'withdrawn': 0.0, 'paid': 0.0};
-      }
-      final data = userDoc.data() as Map<String, dynamic>;
-
-      // Extrae los valores del documento del usuario.
-      // Usamos '?? 0.0' para manejar el caso en que un campo no exista en la BD.
-      return {
-        'paid': (data['totalPaid'] as num? ?? 0.0).toDouble(),
-        'pending': (data['pendingBalance'] as num? ?? 0.0).toDouble(),
-        'withdrawn': (data['totalWithdrawn'] as num? ?? 0.0).toDouble(),
-        'available': (data['availableBalance'] as num? ?? 0.0).toDouble(),
-      };
-    } catch (e) {
-      debugPrint("Error al cargar estadísticas de la billetera: $e");
-      _setError("No se pudieron cargar las estadísticas de la billetera.");
-      return {}; // Devuelve mapa vacío en caso de error.
-    }
+    final userDoc = await _db.collection('users').doc(_userId).get();
+    if (!userDoc.exists) return {};
+    final data = userDoc.data()!;
+    return {
+      'paid': (data['totalPaid'] as num? ?? 0.0).toDouble(),
+      'pending': (data['pendingBalance'] as num? ?? 0.0).toDouble(),
+      'withdrawn': (data['totalWithdrawn'] as num? ?? 0.0).toDouble(),
+      'available': (data['availableBalance'] as num? ?? 0.0).toDouble(),
+    };
   }
 
-  Future<void> _fetchPayoutMethods() async {
-    if (_userId == null) return;
-    try {
-      final snapshot = await _db
-          .collection('users')
-          .doc(_userId)
-          .collection('payoutDestinations')
-          .get();
-      payoutMethods = snapshot.docs
-          .map((doc) => PayoutDestinationModel.fromMap(doc.data(), doc.id))
-          .toList();
-    } catch (e) {
-      debugPrint("Error al cargar métodos de retiro: $e");
-      _setError("No se pudieron cargar los métodos de retiro.");
-    } finally {
-      notifyListeners();
-    }
+  Future<List<PayoutDestinationModel>> _fetchPayoutMethods() async {
+    final snapshot = await _db
+        .collection('users').doc(_userId).collection('payoutDestinations').get();
+    return snapshot.docs.map((doc) => PayoutDestinationModel.fromMap(doc.data(), doc.id)).toList();
   }
 
-  Future<void> _fetchPaymentMethods() async {
-    if (_userId == null) return;
-    try {
-      final snapshot = await _db
-          .collection('users')
-          .doc(_userId)
-          .collection('paymentMethods')
-          .get();
-      paymentMethods = snapshot.docs
-          .map((doc) => PaymentMethodModel.fromMap(doc.data(), doc.id))
-          .toList();
-    } catch (e) {
-      debugPrint("Error al cargar métodos de pago: $e");
-      _setError("No se pudieron cargar los métodos de pago.");
-    } finally {
-      notifyListeners();
-    }
+  Future<List<PaymentMethodModel>> _fetchPaymentMethods() async {
+    final snapshot = await _db
+        .collection('users').doc(_userId).collection('paymentMethods').get();
+    return snapshot.docs.map((doc) => PaymentMethodModel.fromMap(doc.data(), doc.id)).toList();
   }
 
-  // --- MÉTODOS PÚBLICOS DE ACCIÓN ---
-
-  /// Agrega un nuevo método de pago (tarjeta) a la cuenta del usuario.
-  /// Devuelve `true` si la operación fue exitosa, `false` en caso contrario.
+  /// Agrega un nuevo método de pago.
   Future<bool> addPaymentMethod({
     required String cardNumber,
     required String expiryDate,
@@ -196,75 +136,71 @@ class WalletController with ChangeNotifier {
       return false;
     }
 
-    _setSecondaryLoading(true);
+    _isAddingPaymentMethod = true;
+    notifyListeners();
     _setError(null);
 
     try {
-      // Lógica para determinar la marca de la tarjeta (simplificada)
+      // ... tu lógica para crear `newMethod` es correcta ...
       String brand = 'unknown';
-      if (cardNumber.startsWith('4')) {
-        brand = 'visa';
-      } else if (RegExp(r'^5[1-5]').hasMatch(cardNumber)) {
-        brand = 'mastercard';
-      } else if (RegExp(r'^3[47]').hasMatch(cardNumber)) {
-        brand = 'amex';
-      }
+      if (cardNumber.startsWith('4')) brand = 'visa';
+      else if (RegExp(r'^5[1-5]').hasMatch(cardNumber)) brand = 'mastercard';
+      else if (RegExp(r'^3[47]').hasMatch(cardNumber)) brand = 'amex';
 
       final last4 = cardNumber.substring(cardNumber.length - 4);
-      final alias = '${brand.toUpperCase()} **** $last4';
-
       final newMethod = PaymentMethodModel(
-        paymentMethodId: '', // Firestore generará el ID
-        alias: alias,
+        paymentMethodId: '',
+        alias: '${brand.toUpperCase()} **** $last4',
         type: 'card',
-        isDefault: paymentMethods.isEmpty, // El primero es el predeterminado
-        providerDetails: {
-          'last4': last4,
-          'brand': brand,
-          'cardHolderName': cardHolderName,
-          // NOTA: NUNCA guardes el CVV o la fecha de expiración completa en tu DB.
-          // Esto debería ser manejado por un procesador de pagos como Stripe o Braintree.
-        },
+        isDefault: paymentMethods.isEmpty,
+        providerDetails: {'last4': last4, 'brand': brand, 'cardHolderName': cardHolderName},
       );
 
-      final docRef = await _db
-          .collection('users')
-          .doc(_userId)
-          .collection('paymentMethods')
-          .add(newMethod.toMap());
+      final docRef = await _db.collection('users').doc(_userId)
+          .collection('paymentMethods').add(newMethod.toMap());
 
-      // Actualizamos la lista local con el nuevo método y su ID real.
-      paymentMethods.add(
-          PaymentMethodModel.fromMap(newMethod.toMap(), docRef.id)
-      );
+      // Actualizamos la lista local y notificamos.
+      paymentMethods.add(PaymentMethodModel.fromMap(newMethod.toMap(), docRef.id));
 
       notifyListeners();
-      return true; // Éxito
+      return true;
+
     } catch (e) {
-      debugPrint("Error al agregar método de pago: $e");
+      debugPrint("❌ Error al agregar método de pago: $e");
       _setError("Ocurrió un error al agregar el método de pago.");
-      return false; // Fracaso
+      notifyListeners();
+      return false;
     } finally {
-      _setSecondaryLoading(false);
+      _isAddingPaymentMethod = false;
+      notifyListeners();
     }
   }
 
-  // --- MÉTODOS PRIVADOS PARA GESTIÓN DE ESTADO INTERNO ---
+  // --- MANEJO DE ESTADO INTERNO ---
 
-  void _setLoading(bool value) {
-    _isLoading = value;
-    notifyListeners();
-  }
-
-  void _setSecondaryLoading(bool value) {
-    _isAddingPaymentMethod = value;
-    notifyListeners();
+  void _setState(WalletState newState) {
+    if (_state != newState) {
+      _state = newState;
+      notifyListeners();
+    }
   }
 
   void _setError(String? message) {
     if (_error != message) {
       _error = message;
-      notifyListeners();
+      // No notificamos aquí, se hará con el cambio de estado general
     }
+  }
+
+  /// Resetea el estado cuando el usuario cierra sesión.
+  void _resetState() {
+    _userId = null;
+    paymentMethods.clear();
+    payoutMethods.clear();
+    transactions.clear();
+    walletStats.clear();
+    _error = null;
+    _state = WalletState.initial;
+    notifyListeners();
   }
 }

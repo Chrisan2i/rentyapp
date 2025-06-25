@@ -1,9 +1,7 @@
-// ARCHIVO: lib/features/product/product_details_view.dart
-
-import 'package:firebase_auth/firebase_auth.dart'; // Necesario para obtener el usuario actual
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
-import 'package:rentyapp/features/product/models/product_model.dart'; // Ajusta la ruta a tus modelos
+import 'package:rentyapp/features/product/models/product_model.dart';
 import 'package:rentyapp/features/auth/models/user_model.dart';
 import 'package:rentyapp/features/auth/services/auth_service.dart';
 import 'package:rentyapp/features/send_rental_request/send_rental_request_view.dart';
@@ -99,7 +97,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                       RentalDetailsCard(
                         prices: widget.product.rentalPrices,
                         minimumRentalDays: widget.product.minimumRentalDays,
-                        depositAmount: widget.product.depositAmount,
+                        depositAmount: widget.product.securityDeposit,
                       ),
                       const SizedBox(height: 24),
                       LocationCard(location: widget.product.location),

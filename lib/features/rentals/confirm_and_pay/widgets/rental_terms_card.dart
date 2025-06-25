@@ -1,5 +1,9 @@
+// lib/features/rentals/views/widgets/rental_terms_card.dart
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:rentyapp/core/utils/terms_and_conditions.dart';
+import 'package:rentyapp/core/widgets/info_card.dart';
 
 class RentalTermsCard extends StatelessWidget {
   final bool termsAgreed;
@@ -13,43 +17,129 @@ class RentalTermsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _InfoCard(
+    final theme = Theme.of(context);
+
+    return InfoCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Rental Terms', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+          Text(
+            // ✨ MEJORA: Texto ya estaba en español, se mantiene.
+            'TÉRMINOS Y CONDICIONES',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
           const SizedBox(height: 16),
-          _buildTermItem('Free cancellation until 24 hours before pickup'),
-          _buildTermItem('Security deposit of \$200 will be held temporarily'),
-          _buildTermItem('Late return fee: \$10 per hour after agreed time'),
-          _buildTermItem('Damage protection included up to item value'),
+          // ✨ MEJORA: Textos en español.
+          _buildTermItem('Cancelación gratuita hasta 48h antes del inicio.'),
+          _buildTermItem('Depósito de seguridad retenido hasta la devolución.'),
+          _buildTermItem('Penalización por cancelación tardía: 50% del total.'),
+          _buildTermItem('El arrendatario cubre costos por daños al producto.'),
           const SizedBox(height: 16),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                height: 24,
-                width: 24,
-                child: Checkbox(value: termsAgreed, onChanged: onTermsChanged, activeColor: Colors.blue, checkColor: Colors.black, side: const BorderSide(color: Colors.grey)),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: RichText(
-                  text: TextSpan(
-                    style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                    children: [
-                      const TextSpan(text: 'I agree to the '),
-                      TextSpan(text: 'rental terms', style: const TextStyle(color: Colors.blueAccent, decoration: TextDecoration.underline), recognizer: TapGestureRecognizer()..onTap = () {}),
-                      const TextSpan(text: ' and '),
-                      TextSpan(text: 'cancellation policy', style: const TextStyle(color: Colors.blueAccent, decoration: TextDecoration.underline), recognizer: TapGestureRecognizer()..onTap = () {}),
-                    ],
+          // ✨ MEJORA: Mejor UX al hacer toda la fila clickeable.
+          InkWell(
+            onTap: () => onTermsChanged(!termsAgreed),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: Checkbox(
+                      value: termsAgreed,
+                      onChanged: onTermsChanged,
+                      activeColor: Colors.blueAccent,
+                      checkColor: Colors.white,
+                      side: const BorderSide(color: Colors.grey),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: RichText(
+                      text: TextSpan(
+                        style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey.shade400),
+                        children: [
+                          const TextSpan(text: 'He leído y acepto los '),
+                          TextSpan(
+                            text: 'Términos y Condiciones',
+                            style: const TextStyle(
+                              color: Colors.blueAccent,
+                              decoration: TextDecoration.underline,
+                            ),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () {
+                                _showTermsDialog(context);
+                              },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  void _showTermsDialog(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1E1E1E), // Dark theme for modal
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.8,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Términos y Condiciones',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: scrollController,
+                      child: Text(
+                        rentyTermsAndConditions, // Assuming this variable holds the full text
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade300, height: 1.5),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton(
+                      style: TextButton.styleFrom(backgroundColor: Colors.blueAccent),
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cerrar', style: TextStyle(color: Colors.white)),
+                    ),
+                  )
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -59,24 +149,18 @@ class RentalTermsCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('• ', style: TextStyle(color: Colors.grey.shade400)),
-          Expanded(child: Text(text, style: TextStyle(color: Colors.grey.shade400))),
+          Padding(
+            padding: const EdgeInsets.only(top: 5.0),
+            child: Text('• ', style: TextStyle(color: Colors.grey.shade400, fontSize: 14)),
+          ),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+            ),
+          ),
         ],
       ),
-    );
-  }
-}
-
-class _InfoCard extends StatelessWidget {
-  final Widget child;
-  const _InfoCard({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(color: const Color(0xFF1E1E1E), borderRadius: BorderRadius.circular(12)),
-      child: child,
     );
   }
 }

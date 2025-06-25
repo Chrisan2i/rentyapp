@@ -8,9 +8,8 @@ import '../../../../core/widgets/custom_network_image.dart';
 import 'details_text_button.dart';
 import 'section_card.dart';
 
-/// Un widget de sección que busca y muestra una vista previa de las reseñas de clientes.
+/// A section widget that fetches and displays a preview of customer reviews.
 class CustomerReviewsSection extends StatefulWidget {
-  // ... El resto de esta clase no cambia ...
   final String productId;
   final int totalReviews;
 
@@ -25,7 +24,6 @@ class CustomerReviewsSection extends StatefulWidget {
 }
 
 class _CustomerReviewsSectionState extends State<CustomerReviewsSection> {
-  // ... Todo el State no cambia ...
   late final Future<List<ReviewModel>> _reviewsFuture;
 
   @override
@@ -34,6 +32,7 @@ class _CustomerReviewsSectionState extends State<CustomerReviewsSection> {
     _reviewsFuture = _fetchReviews(widget.productId);
   }
 
+  /// Fetches the 2 most recent reviews for a given product.
   Future<List<ReviewModel>> _fetchReviews(String productId) async {
     if (widget.totalReviews == 0) return [];
 
@@ -48,6 +47,7 @@ class _CustomerReviewsSectionState extends State<CustomerReviewsSection> {
       return snapshot.docs.map((doc) => ReviewModel.fromFirestore(doc)).toList();
     } catch (e) {
       debugPrint("Error fetching reviews: $e");
+      // Re-throw to be caught by the FutureBuilder
       throw Exception('Failed to load reviews');
     }
   }
@@ -58,9 +58,12 @@ class _CustomerReviewsSectionState extends State<CustomerReviewsSection> {
       return SectionCard(
         title: 'Customer Reviews (0)',
         child: const Center(
-          child: Text(
-            'Be the first to leave a review!',
-            style: TextStyle(color: AppColors.textSecondary),
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 16.0),
+            child: Text(
+              'Be the first to leave a review!',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
         ),
       );
@@ -86,12 +89,13 @@ class _CustomerReviewsSectionState extends State<CustomerReviewsSection> {
           title: 'Customer Reviews (${widget.totalReviews})',
           child: Column(
             children: [
-              ...reviews.map((review) => _ReviewItem(review: review)).toList(),
+              ...reviews.map((review) => _ReviewItem(review: review)),
               if (widget.totalReviews > reviews.length) ...[
                 const SizedBox(height: 16),
                 DetailsTextButton(
                   text: 'Show all ${widget.totalReviews} reviews',
                   onPressed: () {
+                    // TODO: Implement navigation to all reviews screen
                     debugPrint('Navigate to all reviews for product ${widget.productId}');
                   },
                 ),
@@ -104,7 +108,7 @@ class _CustomerReviewsSectionState extends State<CustomerReviewsSection> {
   }
 }
 
-/// Widget privado para mostrar un solo ítem de reseña.
+/// A private widget to display a single review item.
 class _ReviewItem extends StatelessWidget {
   final ReviewModel review;
 
@@ -112,6 +116,7 @@ class _ReviewItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Fallback initials if the user name is empty.
     final String userInitials = review.userName.isNotEmpty ? review.userName[0].toUpperCase() : 'A';
 
     return Padding(
@@ -123,16 +128,17 @@ class _ReviewItem extends StatelessWidget {
             radius: 20,
             backgroundColor: AppColors.surface,
             child: ClipOval(
-              // 3. AQUÍ ESTÁ EL CAMBIO
               child: CustomNetworkImage(
                 imageUrl: review.userImageUrl,
                 fit: BoxFit.cover,
                 width: 40,
                 height: 40,
-                // Pasamos los mismos widgets de placeholder y error
-                placeholder: (context) => const CircularProgressIndicator(strokeWidth: 2),
+                placeholder: (context) => const CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
                 errorWidget: (context, error) => Center(
-                  child: Text(userInitials, style: const TextStyle(color: AppColors.white)),
+                  child: Text(
+                    userInitials,
+                    style: const TextStyle(color: AppColors.white, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ),
@@ -162,8 +168,7 @@ class _ReviewItem extends StatelessWidget {
   }
 }
 
-
-// El widget _ReviewsPlaceholder no necesita cambios
+/// A placeholder (skeleton) widget for the review list while loading.
 class _ReviewsPlaceholder extends StatelessWidget {
   const _ReviewsPlaceholder();
 
@@ -191,13 +196,13 @@ class _ReviewsPlaceholder extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(width: 100, height: 14, color: AppColors.surface),
+              Container(width: 100, height: 14, decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(4))),
               const SizedBox(height: 8),
-              Container(width: 80, height: 12, color: AppColors.surface),
+              Container(width: 80, height: 12, decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(4))),
               const SizedBox(height: 10),
-              Container(width: double.infinity, height: 13, color: AppColors.surface),
+              Container(width: double.infinity, height: 13, decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(4))),
               const SizedBox(height: 6),
-              Container(width: 150, height: 13, color: AppColors.surface),
+              Container(width: 150, height: 13, decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(4))),
             ],
           ),
         ),

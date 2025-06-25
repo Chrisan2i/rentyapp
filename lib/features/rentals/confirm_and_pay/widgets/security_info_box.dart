@@ -1,3 +1,5 @@
+// lib/features/rentals/views/widgets/security_info_box.dart
+
 import 'package:flutter/material.dart';
 
 class SecurityInfoBox extends StatelessWidget {
@@ -5,21 +7,29 @@ class SecurityInfoBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    // ✨ MEJORA: Usando el color primario del tema para adaptabilidad.
+    final primaryColor = theme.colorScheme.primary;
+
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue.shade900.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.blue.shade700),
+        // ✨ MEJORA: Estilo más sutil y profesional.
+        color: primaryColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: primaryColor.withOpacity(0.3)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline, color: Colors.blue.shade300),
+          Icon(Icons.shield_outlined, color: primaryColor, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Your payment is securely held until the rental is completed. You won\'t be charged if the owner cancels.',
-              style: TextStyle(color: Colors.blue.shade200, fontSize: 13),
+              // ✨ MEJORA: Texto en español.
+              'Tu pago se retiene de forma segura hasta completar el alquiler. No se te cobrará si el propietario cancela.',
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: Colors.white.withOpacity(0.9)),
             ),
           )
         ],

@@ -1,51 +1,44 @@
 // lib/features/rentals/models/rental_model.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'contract_model.dart';
 
-// Enum para un manejo de estado claro, robusto y sin errores de tipeo.
+/// Enum para estados de alquiler.
 enum RentalStatus {
   awaiting_payment,
-  awaiting_delivery, // Aceptado y pagado, esperando que el dueño entregue el producto.
-  ongoing,           // El arrendatario tiene el producto.
-  completed,         // El producto fue devuelto y el ciclo finalizó correctamente.
-  cancelled,         // El alquiler fue cancelado antes o durante el proceso.
-  disputed           // Se ha reportado un problema (ej. daño, no devolución).
+  awaiting_delivery,
+  ongoing,
+  completed,
+  cancelled,
+  disputed,
 }
 
+/// Modelo que representa un alquiler y ahora incluye opcionalmente el contrato digital.
 class RentalModel {
   final String rentalId;
   final RentalStatus status;
 
-  // --- Información Denormalizada (Congelada al momento del alquiler) ---
-  // Guardamos esta información aquí para evitar consultas extra a otras colecciones
-  // y para tener un registro histórico de cómo eran los datos en ese momento.
+  // Información denormalizada
+  final Map<String, dynamic> productInfo;
+  final Map<String, dynamic> ownerInfo;
+  final Map<String, dynamic> renterInfo;
 
-  // Información del producto alquilado
-  final Map<String, dynamic> productInfo; // ej: {'productId': '...', 'title': '...', 'imageUrl': '...'}
-
-  // Información del dueño del producto
-  final Map<String, dynamic> ownerInfo; // ej: {'userId': '...', 'fullName': '...'}
-
-  // Información del arrendatario
-  final Map<String, dynamic> renterInfo; // ej: {'userId': '...', 'fullName': '...'}
-
-  // --- Fechas y Finanzas ---
+  // Fechas y finanzas
   final DateTime startDate;
   final DateTime endDate;
-  final Map<String, double> financials; // ej: {'subtotal': 50.0, 'serviceFee': 7.5, 'total': 57.5}
+  final Map<String, double> financials;
 
-  // --- Seguimiento del Proceso y Estado ---
-  final DateTime? deliveryConfirmedAt; // Timestamp de cuando el arrendatario confirma la recepción.
-  final DateTime? returnConfirmedAt;   // Timestamp de cuando el dueño confirma la devolución.
+  // Seguimiento del proceso
+  final DateTime? deliveryConfirmedAt;
+  final DateTime? returnConfirmedAt;
   final bool reviewedByRenter;
   final bool reviewedByOwner;
 
-  // --- Metadatos ---
-  final DateTime createdAt; // Fecha de creación del documento de alquiler.
-
-  // <<<--- CAMPO CLAVE PARA CONSULTAS EFICIENTES ---<<<
-  // Contiene los UIDs tanto del dueño como del arrendatario.
-  // Permite hacer una sola consulta 'array-contains' para obtener todos los alquileres de un usuario.
+  // Metadatos
+  final DateTime createdAt;
   final List<String> involvedUsers;
+
+  // Contrato digital asociado (opcional)
+  final ContractModel? contract;
 
   RentalModel({
     required this.rentalId,
@@ -62,48 +55,59 @@ class RentalModel {
     this.reviewedByOwner = false,
     required this.createdAt,
     required this.involvedUsers,
+    this.contract,
   });
 
-  /// Factory constructor para crear una instancia de RentalModel desde un mapa de Firestore.
-  factory RentalModel.fromMap(Map<String, dynamic> map, String id) {
+  factory RentalModel.fromMap(
+      Map<String, dynamic> map,
+      String id, {
+        ContractModel? contract,
+      }) {
     return RentalModel(
       rentalId: id,
       status: RentalStatus.values.firstWhere(
             (e) => e.name == map['status'],
-        orElse: () => RentalStatus.cancelled, // Valor por defecto seguro
+        orElse: () => RentalStatus.cancelled,
       ),
       productInfo: Map<String, dynamic>.from(map['productInfo'] ?? {}),
       ownerInfo: Map<String, dynamic>.from(map['ownerInfo'] ?? {}),
       renterInfo: Map<String, dynamic>.from(map['renterInfo'] ?? {}),
       startDate: (map['startDate'] as Timestamp).toDate(),
       endDate: (map['endDate'] as Timestamp).toDate(),
-      financials: (map['financials'] as Map<String, dynamic>? ?? {})
-          .map((key, value) => MapEntry(key, (value as num).toDouble())),
-      deliveryConfirmedAt: (map['deliveryConfirmedAt'] as Timestamp?)?.toDate(),
+      financials: (map['financials'] as Map<String, dynamic>?)
+          ?.map((k, v) => MapEntry(k, (v as num).toDouble())) ?? {},
+      deliveryConfirmedAt:
+      (map['deliveryConfirmedAt'] as Timestamp?)?.toDate(),
       returnConfirmedAt: (map['returnConfirmedAt'] as Timestamp?)?.toDate(),
       reviewedByRenter: map['reviewedByRenter'] ?? false,
       reviewedByOwner: map['reviewedByOwner'] ?? false,
       createdAt: (map['createdAt'] as Timestamp).toDate(),
       involvedUsers: List<String>.from(map['involvedUsers'] ?? []),
+      contract: contract,
     );
   }
 
-  /// Convierte la instancia de RentalModel a un mapa para guardarlo en Firestore.
   Map<String, dynamic> toMap() {
-    return {
+    final m = {
       'status': status.name,
       'productInfo': productInfo,
       'ownerInfo': ownerInfo,
       'renterInfo': renterInfo,
-      'startDate': startDate,
-      'endDate': endDate,
+      'startDate': Timestamp.fromDate(startDate),
+      'endDate': Timestamp.fromDate(endDate),
       'financials': financials,
-      'deliveryConfirmedAt': deliveryConfirmedAt,
-      'returnConfirmedAt': returnConfirmedAt,
+      'deliveryConfirmedAt':
+      deliveryConfirmedAt != null ? Timestamp.fromDate(deliveryConfirmedAt!) : null,
+      'returnConfirmedAt':
+      returnConfirmedAt != null ? Timestamp.fromDate(returnConfirmedAt!) : null,
       'reviewedByRenter': reviewedByRenter,
       'reviewedByOwner': reviewedByOwner,
-      'createdAt': createdAt,
+      'createdAt': Timestamp.fromDate(createdAt),
       'involvedUsers': involvedUsers,
     };
+    if (contract != null) {
+      m['contract'] = contract!.toMap();
+    }
+    return m;
   }
 }

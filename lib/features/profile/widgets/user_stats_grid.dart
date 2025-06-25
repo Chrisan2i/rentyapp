@@ -1,4 +1,4 @@
-// ARCHIVO: lib/features/profile/widgets/user_stats_grid.dart
+// lib/features/profile/widgets/user_stats_grid.dart
 
 import 'package:flutter/material.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
@@ -16,19 +16,21 @@ class UserStatsGrid extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('My Stats', style: AppTextStyles.statCompactTitle),
+        // ✨ MEJORA: Texto en español
+        const Text('Mis Estadísticas', style: AppTextStyles.statCompactTitle),
         const SizedBox(height: 12),
         Row(
           children: [
+            // ✨ MEJORA: Textos en español
             _buildStatCard(
-              'My Listings',
-              '${user.totalRentsAsOwner} items',
+              'Mis Publicaciones',
+              '${user.totalRentsAsOwner} ítems',
               Icons.list_alt,
             ),
             const SizedBox(width: 12),
             _buildStatCard(
-              'My Rentals',
-              '${user.totalRentsAsRenter} items',
+              'Mis Alquileres',
+              '${user.totalRentsAsRenter} ítems',
               Icons.shopping_bag_outlined,
             ),
           ],
@@ -37,14 +39,14 @@ class UserStatsGrid extends StatelessWidget {
         Row(
           children: [
             _buildStatCard(
-              'Reviews',
-              '${user.totalReviews} total',
+              'Reseñas',
+              '${user.totalReviews} totales',
               Icons.reviews_outlined,
             ),
             const SizedBox(width: 12),
             _buildStatCard(
-              'Member for',
-              '$daysAsMember days',
+              'Miembro por',
+              '$daysAsMember días',
               Icons.cake_outlined,
             ),
           ],
@@ -65,9 +67,17 @@ class UserStatsGrid extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: AppColors.primary, size: 24),
+            // ✨ MEJORA: Ícono con fondo para mayor impacto visual.
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: AppColors.primary, size: 20),
+            ),
             const SizedBox(height: 8),
-            Text(title, style: AppTextStyles.inputLabel),
+            Text(title, style: AppTextStyles.subtitle.copyWith(fontSize: 12)),
             const SizedBox(height: 2),
             Text(value, style: AppTextStyles.statCompactSubtitle.copyWith(color: AppColors.white)),
           ],

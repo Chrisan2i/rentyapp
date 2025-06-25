@@ -1,6 +1,6 @@
 // lib/features/auth/login/widgets/login_header.dart
 import 'package:flutter/material.dart';
-import 'package:rentyapp/core/theme/app_colors.dart';
+// import 'package:rentyapp/core/theme/app_colors.dart'; // Ya no es necesario
 import 'package:rentyapp/core/theme/app_text_styles.dart';
 
 class LoginHeader extends StatelessWidget {
@@ -10,26 +10,25 @@ class LoginHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const CircleAvatar(
-          radius: 40,
-          backgroundColor: AppColors.primary,
-          child: Text(
-            'R',
-            style: TextStyle(
-              fontSize: 42,
-              fontWeight: FontWeight.bold,
-              color: AppColors.white,
-            ),
-          ),
+        // --- CÓDIGO ADAPTADO ---
+        // Se reemplaza el CircleAvatar por el widget Image.asset
+        Image.asset(
+          'assets/rentyapp.png', // Asegúrate de que la ruta a tu logo sea correcta
+          width: 180, // Puedes ajustar el ancho a tu gusto
         ),
-        const SizedBox(height: 24),
+        // --- FIN DE LA ADAPTACIÓN ---
+
+        const SizedBox(height: 32), // Aumenté un poco el espacio para que respire mejor
+
         const Text(
-          'Welcome back to Renty',
+          'Bienvenido de nuevo', // Texto actualizado a español
           style: AppTextStyles.loginTitle,
         ),
+
         const SizedBox(height: 8),
+
         const Text(
-          'Log in to start renting or listing your items',
+          'Inicia sesión para alquilar o publicar tus artículos', // Texto actualizado a español
           style: AppTextStyles.subtitle,
           textAlign: TextAlign.center,
         ),

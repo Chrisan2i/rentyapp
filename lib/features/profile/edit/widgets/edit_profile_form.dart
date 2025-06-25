@@ -1,4 +1,4 @@
-// ARCHIVO: lib/features/profile/widgets/edit_profile_form.dart
+// lib/features/profile/widgets/edit_profile_form.dart
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -17,7 +17,6 @@ class EditProfileForm extends StatefulWidget {
 
 class _EditProfileFormState extends State<EditProfileForm> {
   final _formKey = GlobalKey<FormState>();
-
   final _fullNameController = TextEditingController();
   final _usernameController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -30,7 +29,6 @@ class _EditProfileFormState extends State<EditProfileForm> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_isInitialized) {
-      // Se usa 'AppController' para obtener los datos iniciales.
       final user = Provider.of<AppController>(context, listen: false).currentUser;
       if (user != null) {
         _fullNameController.text = user.fullName;
@@ -61,17 +59,14 @@ class _EditProfileFormState extends State<EditProfileForm> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
 
-    // Se usa 'AppController' para acceder a los métodos.
     final controller = Provider.of<AppController>(context, listen: false);
-    final user = controller.currentUser!; // '!' es seguro aquí.
+    final user = controller.currentUser!;
 
     try {
       String imageUrl = user.profileImageUrl;
       if (_newProfileImage != null) {
-        // Lógica para subir imagen aquí...
-        // imageUrl = await controller.uploadImage(_newProfileImage!);
+        // imageUrl = await controller.uploadProfileImage(_newProfileImage!);
       }
-
       final updatedData = {
         'fullName': _fullNameController.text.trim(),
         'username': _usernameController.text.trim(),
@@ -82,14 +77,16 @@ class _EditProfileFormState extends State<EditProfileForm> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Perfil actualizado'), backgroundColor: Colors.green),
+          // ✨ MEJORA: Texto en español.
+          const SnackBar(content: Text('Perfil actualizado con éxito'), backgroundColor: Colors.green),
         );
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+          // ✨ MEJORA: Texto en español.
+          SnackBar(content: Text('Error al actualizar: ${e.toString()}'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -101,56 +98,59 @@ class _EditProfileFormState extends State<EditProfileForm> {
 
   @override
   Widget build(BuildContext context) {
+    // ✨ MEJORA: Estilo de input centralizado para consistencia.
+    final inputDecoration = InputDecoration(
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.white10)),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.white10)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary)),
+      filled: true,
+      fillColor: AppColors.surface,
+      labelStyle: const TextStyle(color: AppColors.white70),
+    );
+
     return Form(
       key: _formKey,
       child: Column(
         children: [
-          // Se usa 'AppController' en el Consumer.
           Consumer<AppController>(
             builder: (context, controller, child) {
               return EditProfileAvatar(
                 imageFile: _newProfileImage,
-                // '!' es seguro aquí por la lógica en la vista padre.
                 imageUrl: controller.currentUser!.profileImageUrl,
+                userName: controller.currentUser!.fullName, // Pasamos el nombre para el fallback
                 onTap: _pickImage,
               );
             },
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
           TextFormField(
             controller: _fullNameController,
-            decoration: const InputDecoration(labelText: 'Nombre completo'),
-            validator: (val) => val!.isEmpty ? 'Campo requerido' : null,
+            // ✨ MEJORA: Texto en español y estilo aplicado.
+            decoration: inputDecoration.copyWith(labelText: 'Nombre completo'),
+            validator: (val) => val!.isEmpty ? 'Este campo es requerido' : null,
           ),
           const SizedBox(height: 16),
           TextFormField(
             controller: _usernameController,
-            decoration: const InputDecoration(labelText: 'Nombre de usuario'),
-            validator: (val) => val!.isEmpty ? 'Campo requerido' : null,
+            decoration: inputDecoration.copyWith(labelText: 'Nombre de usuario', prefixText: '@'),
+            validator: (val) => val!.isEmpty ? 'Este campo es requerido' : null,
           ),
           const SizedBox(height: 16),
           TextFormField(
             controller: _phoneController,
-            decoration: const InputDecoration(labelText: 'Teléfono'),
+            decoration: inputDecoration.copyWith(labelText: 'Teléfono'),
             keyboardType: TextInputType.phone,
           ),
           const SizedBox(height: 32),
           SizedBox(
             width: double.infinity,
-            height: 48,
+            height: 50, // ✨ MEJORA: Altura estándar para botones.
             child: ElevatedButton(
               onPressed: _isLoading ? null : _saveChanges,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
-              ),
               child: _isLoading
-                  ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white),
-              )
-                  : const Text('Guardar cambios', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white))
+              // ✨ MEJORA: Texto en español.
+                  : const Text('Guardar Cambios', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             ),
           )
         ],

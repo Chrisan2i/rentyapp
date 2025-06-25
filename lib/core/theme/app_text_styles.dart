@@ -1,4 +1,4 @@
-// ARCHIVO: lib/core/theme/app_text_styles.dart
+// lib/core/theme/app_text_styles.dart
 
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
@@ -46,7 +46,6 @@ class AppTextStyles {
     color: AppColors.white70,
   );
 
-  // <<<--- AÑADIDO: Estilo para texto de cuerpo general (como la biografía) ---<<<
   static const TextStyle body = TextStyle(
     fontSize: 14,
     color: AppColors.white70,
@@ -138,6 +137,12 @@ class AppTextStyles {
   static const TextStyle quickAccessLabel = TextStyle(
     fontSize: 12,
     color: AppColors.white70,
+  );
+
+  // <<<--- SOLUCIÓN: Aquí añadimos el estilo que faltaba ---<<<
+  static const TextStyle small = TextStyle(
+    fontSize: 12,
+    color: AppColors.white,
   );
 
   // --- Misceláneos ---

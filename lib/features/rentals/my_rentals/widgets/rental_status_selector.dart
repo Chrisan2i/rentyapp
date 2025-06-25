@@ -1,19 +1,26 @@
+// lib/features/rentals/widgets/rental_status_selector.dart
+
 import 'package:flutter/material.dart';
 
 class RentalStatusSelector extends StatelessWidget {
   final bool isOngoingSelected;
   final ValueChanged<bool> onStatusSelected;
 
-  const RentalStatusSelector({Key? key, required this.isOngoingSelected, required this.onStatusSelected}) : super(key: key);
+  const RentalStatusSelector({
+    super.key,
+    required this.isOngoingSelected,
+    required this.onStatusSelected,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        _buildStatusButton('Ongoing', true),
+        // ✨ MEJORA: Textos traducidos a español.
+        _buildStatusButton('En Curso', true),
         const SizedBox(width: 12),
-        _buildStatusButton('Past', false),
+        _buildStatusButton('Pasados', false),
       ],
     );
   }
@@ -21,7 +28,7 @@ class RentalStatusSelector extends StatelessWidget {
   Widget _buildStatusButton(String label, bool representsOngoing) {
     final isSelected = isOngoingSelected == representsOngoing;
     return Material(
-      color: isSelected ? const Color(0xFF0A84FF) : const Color(0xFF2C2C2E),
+      color: isSelected ? Colors.blueAccent : const Color(0xFF2C2C2E),
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: () => onStatusSelected(representsOngoing),
@@ -31,7 +38,8 @@ class RentalStatusSelector extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
-              color: isSelected ? Colors.white : Colors.grey.shade400,
+              // ✨ MEJORA: El color no seleccionado tiene mejor contraste.
+              color: isSelected ? Colors.white : Colors.grey.shade300,
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),

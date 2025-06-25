@@ -4,90 +4,112 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
-import 'package:rentyapp/features/landing/landing.dart';
 
+// ✨ PASO 1: Importa el paquete de internacionalización.
+import 'package:intl/date_symbol_data_local.dart';
+
+import 'package:rentyapp/features/landing/landing.dart';
 import 'core/theme/app_colors.dart';
 import 'core/controllers/wallet_controller.dart';
 import 'features/product/services/product_services.dart';
 import 'firebase_options.dart';
 import 'core/theme/theme.dart';
-import 'core/controllers/controller.dart';
+import 'core/controllers/controller.dart'; // AppController
 import 'features/auth/login/login_controller.dart';
 import 'features/auth/login/login.dart';
 import 'features/auth/register/sign_up.dart';
 import 'features/auth/services/auth_service.dart';
 import 'features/rentals/services/rental_services.dart';
-import 'package:rentyapp/features/notifications/service/notification_service.dart'; // Ruta corregida a plural 'services'
+import 'features/notifications/service/notification_service.dart';
 import 'core/widgets/main_navigation.dart';
 import 'features/rentals/rental_request/rental_requests_view.dart';
 import 'package:rentyapp/features/auth/register/register_controller.dart';
 import 'package:rentyapp/core/splash/splash_screen.dart';
 
-void main() async {
+// ✨ PASO 2: Convierte tu función main en async.
+Future<void> main() async {
+  // Asegúrate de que los bindings de Flutter estén listos.
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializa Firebase como lo tenías.
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  // ✨ PASO 3: Inicializa los datos de formato para el idioma español.
+  // Esta línea es la solución al error.
+  await initializeDateFormatting('es_ES', null);
+
+  // Tu manejo de errores global (se mantiene igual, está perfecto).
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
-    debugPrint('❌ FlutterError: ${details.exception}');
+    if (kDebugMode) {
+      debugPrint('❌ FlutterError: ${details.exception}');
+    }
   };
-
   PlatformDispatcher.instance.onError = (error, stack) {
-    debugPrint('🔥 Unhandled platform error: $error');
+    if (kDebugMode) {
+      debugPrint('🔥 Unhandled platform error: $error');
+    }
     return true;
   };
 
-  runApp(
-    MultiProvider(
+  // Lanza tu aplicación con los providers.
+  runApp(const MyAppWithProviders());
+}
+
+class MyAppWithProviders extends StatelessWidget {
+  const MyAppWithProviders({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // Tu estructura de providers está bien, no necesita cambios.
+    return MultiProvider(
       providers: [
-        // --- SECCIÓN 1: SERVICIOS SIN DEPENDENCIAS ---
+        // --- SECCIÓN 1: SERVICIOS INDEPENDIENTES ---
         Provider<AuthService>(create: (_) => AuthService()),
         Provider<ProductService>(create: (_) => ProductService()),
-        Provider<NotificationService>(create: (_) => NotificationService()), // Debe estar antes que RentalService
+        Provider<NotificationService>(create: (_) => NotificationService()),
 
-        // --- CORRECCIÓN 1: Usar ProxyProvider para inyectar la dependencia ---
-        // Esto crea RentalService usando la instancia de NotificationService ya creada.
+        // --- SECCIÓN 2: SERVICIOS DEPENDIENTES (PROXY PROVIDERS) ---
         ProxyProvider<NotificationService, RentalService>(
-          update: (context, notificationService, previous) =>
+          update: (_, notificationService, __) =>
               RentalService(notificationService: notificationService),
         ),
 
-        // --- SECCIÓN 2: CONTROLADORES (DEPENDEN DE SERVICIOS) ---
-        // Tu AppController está casi bien, pero también necesita usar el RentalService del ProxyProvider.
-        ChangeNotifierProxyProvider<RentalService, AppController>(
+        // --- SECCIÓN 3: CONTROLADORES (CHANGENOTIFIERS) ---
+        ChangeNotifierProvider<AppController>(
           create: (context) => AppController(
             authService: context.read<AuthService>(),
             rentalService: context.read<RentalService>(),
             notificationService: context.read<NotificationService>(),
           ),
-          update: (context, rentalService, previous) => previous!..updateDependencies(
-            context.read<AuthService>(),
-            rentalService, // Usa la nueva instancia de rentalService
-            context.read<NotificationService>(),
-          ),
         ),
         ChangeNotifierProvider<LoginController>(
-          create: (context) => LoginController(authService: context.read<AuthService>()),
+          create: (context) => LoginController(
+            authService: context.read<AuthService>(),
+          ),
         ),
         ChangeNotifierProvider<RegisterController>(
-          create: (context) => RegisterController(authService: context.read<AuthService>()),
+          create: (context) => RegisterController(
+            authService: context.read<AuthService>(),
+          ),
         ),
         ChangeNotifierProvider<WalletController>(
           create: (_) => WalletController(),
         ),
       ],
       child: const MyApp(),
-    ),
-  );
+    );
+  }
 }
 
-// ... El resto de tu main.dart (MyApp, AuthWrapper, etc.) no necesita cambios ...
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
+    // El MaterialApp y las rutas se mantienen igual.
     return MaterialApp(
       title: 'Renty',
       debugShowCheckedModeBanner: false,
@@ -108,11 +130,12 @@ class MyApp extends StatelessWidget {
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
+
   @override
   Widget build(BuildContext context) {
-    final authService = Provider.of<AuthService>(context);
+    // El AuthWrapper se mantiene igual.
     return StreamBuilder<User?>(
-      stream: authService.authStateChanges,
+      stream: context.read<AuthService>().authStateChanges,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -127,11 +150,5 @@ class AuthWrapper extends StatelessWidget {
         }
       },
     );
-  }
-}
-
-extension AppControllerUpdate on AppController {
-  void updateDependencies(AuthService auth, RentalService rental, NotificationService notification) {
-    // Lógica de actualización
   }
 }

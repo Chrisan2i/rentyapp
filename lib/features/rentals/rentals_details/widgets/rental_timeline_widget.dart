@@ -9,6 +9,14 @@ class RentalTimelineWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ✨ MEJORA: Uso de Theme para consistencia
+    final theme = Theme.of(context);
+    final dateFormat = DateFormat('d MMM, yyyy \'a las\' hh:mm a', 'es_ES');
+
+    // ✨ MEJORA: Definición de estados para mayor claridad
+    final isPaymentConfirmed = rental.status != RentalStatus.awaiting_payment;
+    final isItemDelivered = rental.status == RentalStatus.ongoing || rental.status == RentalStatus.completed;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -18,26 +26,35 @@ class RentalTimelineWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Rental Timeline', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(
+            // ✨ MEJORA: Texto en español
+            'Línea de Tiempo del Alquiler',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const SizedBox(height: 16),
+          // ✨ MEJORA: Todos los textos traducidos a español
           _TimelineStep(
-            title: 'Request Received',
-            subtitle: DateFormat('MMM d, yyyy \'at\' hh:mm a').format(rental.createdAt),
+            title: 'Solicitud Recibida',
+            subtitle: dateFormat.format(rental.createdAt),
             isCompleted: true,
           ),
           _TimelineStep(
-            title: 'Request Approved',
-            subtitle: DateFormat('MMM d, yyyy \'at\' hh:mm a').format(rental.createdAt.add(const Duration(minutes: 5))),
+            title: 'Solicitud Aprobada',
+            subtitle: dateFormat.format(rental.createdAt.add(const Duration(minutes: 5))), // Dato de ejemplo
             isCompleted: true,
           ),
           _TimelineStep(
-            title: 'Payment Confirmed',
-            subtitle: rental.status != RentalStatus.awaiting_payment ? 'Payment done' : 'Pending...',
-            isCompleted: rental.status != RentalStatus.awaiting_payment,
+            title: 'Pago Confirmado',
+            subtitle: isPaymentConfirmed ? 'Pago realizado' : 'Pendiente...',
+            isCompleted: isPaymentConfirmed,
           ),
           _TimelineStep(
-            title: 'Item Delivered',
-            isCompleted: rental.status == RentalStatus.ongoing || rental.status == RentalStatus.completed,
+            title: 'Producto Entregado',
+            subtitle: isItemDelivered ? 'Entrega confirmada' : 'Pendiente...',
+            isCompleted: isItemDelivered,
             isLast: true,
           ),
         ],
@@ -61,6 +78,10 @@ class _TimelineStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ✨ MEJORA: Color primario para mayor consistencia visual
+    final activeColor = Colors.blueAccent;
+    final inactiveColor = Colors.grey.shade600;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -68,28 +89,39 @@ class _TimelineStep extends StatelessWidget {
           children: [
             Icon(
               isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
-              color: isCompleted ? const Color(0xFF34C759) : Colors.grey.shade600,
+              color: isCompleted ? activeColor : inactiveColor,
               size: 20,
             ),
             if (!isLast)
               Container(
                 width: 2,
                 height: 30,
-                color: isCompleted ? const Color(0xFF34C759) : Colors.grey.shade600,
+                color: isCompleted ? activeColor : inactiveColor,
               ),
           ],
         ),
         const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: TextStyle(color: isCompleted ? Colors.white : Colors.grey.shade500, fontWeight: FontWeight.bold)),
-            if (subtitle != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 2.0),
-                child: Text(subtitle!, style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  color: isCompleted ? Colors.white : Colors.grey.shade500,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-          ],
+              if (subtitle != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2.0),
+                  child: Text(
+                    subtitle!,
+                    style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+                  ),
+                ),
+            ],
+          ),
         )
       ],
     );

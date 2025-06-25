@@ -1,4 +1,4 @@
-// ARCHIVO: lib/features/profile/widgets/profile_actions_section.dart
+// lib/features/profile/widgets/profile_actions_section.dart
 
 import 'package:flutter/material.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
@@ -25,9 +25,10 @@ class ProfileActionsSection extends StatelessWidget {
       ),
       child: Column(
         children: [
+          // ✨ MEJORA: Textos en español
           _buildActionTile(
             icon: Icons.inbox_outlined,
-            title: 'Rental Requests',
+            title: 'Solicitudes de Alquiler',
             trailing: _buildCountBadge(pendingRequestsCount),
             onTap: () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const RentalRequestsView()));
@@ -35,26 +36,29 @@ class ProfileActionsSection extends StatelessWidget {
           ),
           const Divider(height: 1, color: AppColors.white10, indent: 16, endIndent: 16),
           _buildActionTile(
-            icon: Icons.list,
-            title: 'My Listing',
-            onTap: () { /* TODO: Navegar a Verificación */ },
+            icon: Icons.list_alt_outlined,
+            title: 'Mis Publicaciones',
+            onTap: () { /* TODO: Navigate to My Listings */ },
           ),
           const Divider(height: 1, color: AppColors.white10, indent: 16, endIndent: 16),
           _buildActionTile(
             icon: Icons.favorite_border,
-            title: 'My Favorites',
-            onTap: () { /* TODO: Navegar a Favoritos */ },
+            title: 'Mis Favoritos',
+            onTap: () { /* TODO: Navigate to Favorites */ },
           ),
           const Divider(height: 1, color: AppColors.white10, indent: 16, endIndent: 16),
           _buildActionTile(
             icon: Icons.verified_user_outlined,
-            title: 'Identity Verification',
+            title: 'Verificación de Identidad',
             trailing: Text(
-              isVerified ? 'Complete' : 'Pending',
-              // CORRECCIÓN: Los colores 'success' y 'warning' ahora existen en AppColors.
-              style: TextStyle(color: isVerified ? AppColors.success : AppColors.warning, fontSize: 14),
+              isVerified ? 'Completa' : 'Pendiente',
+              style: TextStyle(
+                color: isVerified ? AppColors.success : AppColors.warning,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-            onTap: () { /* TODO: Navegar a Verificación */ },
+            onTap: () { /* TODO: Navigate to Verification */ },
           ),
         ],
       ),
@@ -71,7 +75,6 @@ class ProfileActionsSection extends StatelessWidget {
         children: [
           if (trailing != null) trailing,
           const SizedBox(width: 8),
-          // CORRECCIÓN: El color 'white30' ahora existe en AppColors.
           const Icon(Icons.chevron_right, color: AppColors.white30),
         ],
       ),

@@ -16,11 +16,12 @@ class FinancialsBreakdownCard extends StatelessWidget {
         color: const Color(0xFF1C1C1E),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: isRenterView ? _buildCostBreakdown() : _buildEarningsBreakdown(),
+      child: isRenterView ? _buildCostBreakdown(context) : _buildEarningsBreakdown(context),
     );
   }
 
-  Widget _buildCostBreakdown() {
+  // ✨ MEJORA: Textos en español
+  Widget _buildCostBreakdown(BuildContext context) {
     final subtotal = rental.financials['subtotal'] ?? 120.0;
     final serviceFee = rental.financials['serviceFee'] ?? 8.0;
     final insurance = rental.financials['insurance'] ?? 12.0;
@@ -29,19 +30,20 @@ class FinancialsBreakdownCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Cost Breakdown', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        Text('Desglose de Costos', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
-        _buildFinancialsRow('Daily Rate', '\$40.00'),
-        _buildFinancialsRow('Rental Days (3)', '\$${subtotal.toStringAsFixed(2)}'),
-        _buildFinancialsRow('Service Fee', '\$${serviceFee.toStringAsFixed(2)}'),
-        _buildFinancialsRow('Insurance', '\$${insurance.toStringAsFixed(2)}'),
+        _buildFinancialsRow('Tarifa por día', '\$40.00'),
+        _buildFinancialsRow('Días de alquiler (3)', '\$${subtotal.toStringAsFixed(2)}'),
+        _buildFinancialsRow('Comisión de servicio', '\$${serviceFee.toStringAsFixed(2)}'),
+        _buildFinancialsRow('Seguro', '\$${insurance.toStringAsFixed(2)}'),
         const Divider(color: Color(0xFF3A3A3C), height: 24),
-        _buildFinancialsRow('Total Paid', '\$${total.toStringAsFixed(2)}', isTotal: true),
+        _buildFinancialsRow('Total Pagado', '\$${total.toStringAsFixed(2)}', isTotal: true),
       ],
     );
   }
 
-  Widget _buildEarningsBreakdown() {
+  // ✨ MEJORA: Textos en español
+  Widget _buildEarningsBreakdown(BuildContext context) {
     final subtotal = rental.financials['subtotal'] ?? 120.0;
     final platformFee = rental.financials['platformFee'] ?? -8.0;
     final processingFee = rental.financials['processingFee'] ?? -3.60;
@@ -50,14 +52,14 @@ class FinancialsBreakdownCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Earnings Breakdown', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        Text('Desglose de Ganancias', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
-        _buildFinancialsRow('Daily Rate', '\$40.00'),
-        _buildFinancialsRow('Rental Days (3)', '\$${subtotal.toStringAsFixed(2)}'),
-        _buildFinancialsRow('Platform Fee', '\$${platformFee.toStringAsFixed(2)}', valueColor: Colors.red.shade400),
-        _buildFinancialsRow('Processing Fee', '\$${processingFee.toStringAsFixed(2)}', valueColor: Colors.red.shade400),
+        _buildFinancialsRow('Tarifa por día', '\$40.00'),
+        _buildFinancialsRow('Días de alquiler (3)', '\$${subtotal.toStringAsFixed(2)}'),
+        _buildFinancialsRow('Comisión de plataforma', '\$${platformFee.toStringAsFixed(2)}', valueColor: Colors.red.shade300),
+        _buildFinancialsRow('Comisión de procesamiento', '\$${processingFee.toStringAsFixed(2)}', valueColor: Colors.red.shade300),
         const Divider(color: Color(0xFF3A3A3C), height: 24),
-        _buildFinancialsRow('Your Earnings', '\$${total.toStringAsFixed(2)}', isTotal: true),
+        _buildFinancialsRow('Tus Ganancias', '\$${total.toStringAsFixed(2)}', isTotal: true),
       ],
     );
   }
@@ -68,8 +70,8 @@ class FinancialsBreakdownCard extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: isTotal ? Colors.white : Colors.grey.shade400, fontSize: 14, fontWeight: isTotal ? FontWeight.bold : FontWeight.normal)),
-          Text(value, style: TextStyle(color: valueColor ?? (isTotal ? const Color(0xFF0A84FF) : Colors.white), fontSize: 14, fontWeight: isTotal ? FontWeight.bold : FontWeight.w600)),
+          Text(label, style: TextStyle(color: isTotal ? Colors.white : Colors.grey.shade400, fontSize: 14, fontWeight: isTotal ? FontWeight.w600 : FontWeight.normal)),
+          Text(value, style: TextStyle(color: valueColor ?? (isTotal ? Colors.blueAccent : Colors.white), fontSize: 14, fontWeight: isTotal ? FontWeight.bold : FontWeight.w600)),
         ],
       ),
     );

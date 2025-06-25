@@ -17,8 +17,8 @@ class PaymentMethodSelectorSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Escuchamos al WalletController para obtener la lista de métodos de pago
     final walletController = context.watch<WalletController>();
+    final theme = Theme.of(context);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
@@ -33,7 +33,6 @@ class PaymentMethodSelectorSheet extends StatelessWidget {
           ),
           child: Column(
             children: [
-              // "Handle" para indicar que se puede arrastrar
               Container(
                 width: 40,
                 height: 5,
@@ -43,53 +42,58 @@ class PaymentMethodSelectorSheet extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.only(bottom: 16.0),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
                 child: Text(
-                  'Select a Payment Method',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                  // ✨ MEJORA: Texto en español.
+                  'Selecciona un Método de Pago',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               ),
               Expanded(
                 child: ListView.separated(
                   controller: scrollController,
                   itemCount: walletController.paymentMethods.length,
-                  separatorBuilder: (_, __) => const Divider(color: AppColors.white10, height: 1, indent: 16, endIndent: 16),
+                  separatorBuilder: (_, __) => const Divider(
+                      color: AppColors.white10, height: 1, indent: 16, endIndent: 16),
                   itemBuilder: (context, index) {
                     final method = walletController.paymentMethods[index];
                     final isSelected = method.paymentMethodId == currentSelectedMethodId;
                     return ListTile(
-                      onTap: () {
-                        // Al seleccionar, cerramos la hoja y devolvemos el método elegido
-                        Navigator.of(context).pop(method);
-                      },
-                      leading: Icon(
-                        _getCardIcon(method.providerDetails['brand']),
-                        color: Colors.white,
-                      ),
+                      onTap: () => Navigator.of(context).pop(method),
+                      leading: Icon(_getCardIcon(method.providerDetails['brand']), color: Colors.white),
                       title: Text(method.alias, style: const TextStyle(color: Colors.white)),
                       subtitle: method.isDefault
-                          ? Text('Default', style: TextStyle(color: Colors.grey.shade400))
+                      // ✨ MEJORA: Texto en español y estilo consistente.
+                          ? Text('Predeterminado',
+                          style: TextStyle(color: Colors.grey.shade400))
                           : null,
-                      trailing: isSelected
-                          ? const Icon(Icons.check_circle, color: AppColors.primary)
-                          : const Icon(Icons.circle_outlined, color: Colors.grey),
+                      trailing: Icon(
+                        isSelected ? Icons.check_circle : Icons.circle_outlined,
+                        color: isSelected ? AppColors.primary : Colors.grey,
+                      ),
                     );
                   },
                 ),
               ),
               const Divider(color: AppColors.white10, height: 1),
-              // Botón para agregar nueva tarjeta
               ListTile(
                 onTap: () {
-                  // Navegamos a la vista de agregar tarjeta
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const AddPaymentMethodView()),
                   );
                 },
                 leading: const Icon(Icons.add_circle_outline, color: AppColors.primary),
-                title: const Text('Add a new card', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                title: const Text(
+                  // ✨ MEJORA: Texto en español.
+                  'Añadir nueva tarjeta',
+                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                ),
               ),
+              // ✨ MEJORA: Padding seguro para la parte inferior.
               SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
             ],
           ),
@@ -99,12 +103,16 @@ class PaymentMethodSelectorSheet extends StatelessWidget {
   }
 
   IconData _getCardIcon(String? brand) {
+    // ✨ MEJORA: Puedes usar un paquete como `font_awesome_flutter` para iconos de marcas específicos.
     switch (brand?.toLowerCase()) {
       case 'visa':
-        return Icons.credit_card; // Puedes usar paquetes como `font_awesome_flutter` para iconos de marcas
+      // return FontAwesomeIcons.ccVisa;
+        return Icons.credit_card;
       case 'mastercard':
+      // return FontAwesomeIcons.ccMastercard;
         return Icons.credit_card;
       case 'amex':
+      // return FontAwesomeIcons.ccAmex;
         return Icons.credit_card;
       default:
         return Icons.credit_card_outlined;

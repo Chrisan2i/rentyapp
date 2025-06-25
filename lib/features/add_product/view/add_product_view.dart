@@ -1,21 +1,20 @@
 // lib/features/add_product/add_product_view.dart
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 
-// --- Tus widgets de pasos ---
+// --- Models, Widgets & Services ---
+import 'package:rentyapp/features/product/models/product_model.dart';
 import 'package:rentyapp/features/add_product/widgets/step_header.dart';
 import 'package:rentyapp/features/add_product/widgets/category_step.dart';
 import 'package:rentyapp/features/add_product/widgets/add_photos_step.dart';
 import 'package:rentyapp/features/add_product/widgets/product_details_step.dart';
 import 'package:rentyapp/features/add_product/widgets/pricing_availability_step.dart';
 import 'package:rentyapp/features/add_product/widgets/location_step.dart';
-// --- Tus servicios y widgets base ---
 import 'package:rentyapp/core/widgets/cloudinary_service.dart';
-import 'package:rentyapp/features/add_product/widgets/next_button.dart'; // <<<--- IMPORTANTE: Importa el nuevo botón
+import 'package:rentyapp/features/add_product/widgets/next_button.dart'; // Renamed for consistency
 
 class AddProductView extends StatefulWidget {
   const AddProductView({super.key});
@@ -25,48 +24,50 @@ class AddProductView extends StatefulWidget {
 }
 
 class _AddProductViewState extends State<AddProductView> {
-  int currentStep = 0;
-  bool _isPublishing = false; // Estado para el spinner de carga
+  int _currentStep = 0;
+  bool _isPublishing = false;
 
-  // --- Datos de los pasos ---
-  String? selectedCategory;
-  List<String> imageUrls = [];
-  final titleController = TextEditingController();
-  final descriptionController = TextEditingController();
-  String condition = 'new';
-  int quantity = 1;
-  Map<String, bool> selectedRates = {'day': false, 'hour': false, 'week': false, 'month': false};
-  Map<String, TextEditingController> rateControllers = {
-    'day': TextEditingController(), 'hour': TextEditingController(),
-    'week': TextEditingController(), 'month': TextEditingController(),
+  // --- Step Data ---
+  String? _selectedCategory;
+  final List<String> _imageUrls = [];
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  String _condition = 'new';
+
+  final Map<String, bool> _selectedRates = {'day': false, 'week': false, 'month': false};
+  final Map<String, TextEditingController> _rateControllers = {
+    'day': TextEditingController(),
+    'week': TextEditingController(),
+    'month': TextEditingController(),
   };
-  final depositController = TextEditingController();
-  List<DateTime> availableDates = [];
-  bool instantBooking = false;
-  final addressController = TextEditingController();
-  double? latitude;
-  double? longitude;
-  bool offersDelivery = false;
+  final _securityDepositController = TextEditingController();
+  bool _instantBooking = false;
 
-  // <<<--- NUEVO: Getter para validar el estado del paso actual ---<<<
+  final _addressController = TextEditingController();
+  double? _latitude;
+  double? _longitude;
+  bool _offersDelivery = false;
+
+  // Getter to validate the current step
   bool get isStepValid {
-    switch (currentStep) {
+    switch (_currentStep) {
       case 0:
-        return selectedCategory != null && selectedCategory!.isNotEmpty;
+        return _selectedCategory != null && _selectedCategory!.isNotEmpty;
       case 1:
-        return imageUrls.isNotEmpty;
+        return _imageUrls.isNotEmpty;
       case 2:
-        return titleController.text.trim().isNotEmpty && descriptionController.text.trim().isNotEmpty;
+        return _titleController.text.trim().isNotEmpty && _descriptionController.text.trim().isNotEmpty;
       case 3:
-        return selectedRates.entries.any((entry) {
+      // Validates that at least one rate is selected and has a valid numeric value > 0.
+        return _selectedRates.entries.any((entry) {
           if (entry.value) {
-            final value = rateControllers[entry.key]?.text.trim();
+            final value = _rateControllers[entry.key]?.text.trim();
             return value != null && value.isNotEmpty && (double.tryParse(value) ?? 0) > 0;
           }
           return false;
         });
       case 4:
-        return addressController.text.trim().isNotEmpty && latitude != null && longitude != null;
+        return _addressController.text.trim().isNotEmpty && _latitude != null && _longitude != null;
       default:
         return false;
     }
@@ -75,81 +76,103 @@ class _AddProductViewState extends State<AddProductView> {
   @override
   void initState() {
     super.initState();
-    // Añadir listeners para que la UI se actualice y el botón se habilite/deshabilite en tiempo real
-    titleController.addListener(_rebuild);
-    descriptionController.addListener(_rebuild);
-    addressController.addListener(_rebuild);
-    rateControllers.forEach((_, controller) => controller.addListener(_rebuild));
+    // Add listeners to rebuild the UI when form fields change (e.g., to enable/disable the next button)
+    _titleController.addListener(_rebuild);
+    _descriptionController.addListener(_rebuild);
+    _addressController.addListener(_rebuild);
+    _securityDepositController.addListener(_rebuild);
+    _rateControllers.forEach((_, controller) => controller.addListener(_rebuild));
   }
 
   void _rebuild() => setState(() {});
 
   @override
   void dispose() {
-    // Limpiar todos los controladores y listeners para evitar memory leaks
-    titleController.removeListener(_rebuild);
-    descriptionController.removeListener(_rebuild);
-    addressController.removeListener(_rebuild);
-    rateControllers.forEach((_, controller) {
+    _titleController.removeListener(_rebuild);
+    _descriptionController.removeListener(_rebuild);
+    _addressController.removeListener(_rebuild);
+    _securityDepositController.removeListener(_rebuild);
+    _rateControllers.forEach((_, controller) {
       controller.removeListener(_rebuild);
       controller.dispose();
     });
-    depositController.dispose();
     super.dispose();
   }
 
-  // --- Lógica de los pasos y envío ---
-
   void _nextStep() {
-    if (currentStep < 4) {
-      setState(() => currentStep++);
+    if (_currentStep < 4) {
+      setState(() => _currentStep++);
     } else {
       _submitProduct();
     }
   }
 
+  // --- Refined Product Submission Logic ---
   Future<void> _submitProduct() async {
-    if (!isStepValid) return; // Doble chequeo
+    if (!isStepValid) return;
     setState(() => _isPublishing = true);
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception('Not authenticated');
+      if (user == null) {
+        throw Exception('User not authenticated. Please log in.');
+      }
 
-      final now = DateTime.now();
       final productId = const Uuid().v4();
 
-      Map<String, double> rentalPrices = {};
-      selectedRates.forEach((key, selected) {
-        if (selected) {
-          final value = rateControllers[key]?.text.trim();
-          if (value != null && value.isNotEmpty) {
-            rentalPrices[key] = double.tryParse(value) ?? 0.0;
-          }
-        }
-      });
+      // 1. Build the PricingDetails object from controllers
+      final pricingDetails = PricingDetails(
+        perDay: _selectedRates['day']! ? double.tryParse(_rateControllers['day']!.text.trim()) : null,
+        perWeek: _selectedRates['week']! ? double.tryParse(_rateControllers['week']!.text.trim()) : null,
+        perMonth: _selectedRates['month']! ? double.tryParse(_rateControllers['month']!.text.trim()) : null,
+      );
 
-      final productData = {
-        'productId': productId, 'ownerId': user.uid, 'title': titleController.text.trim(),
-        'description': descriptionController.text.trim(), 'category': selectedCategory!,
-        'rentalPrices': rentalPrices, 'images': imageUrls, 'isAvailable': true,
-        'rating': 0.0, 'totalReviews': 0, 'views': 0,
-        'createdAt': now.toIso8601String(), 'updatedAt': now.toIso8601String(),
-        'location': {
-          'address': addressController.text.trim(), 'latitude': latitude,
-          'longitude': longitude, 'delivery': offersDelivery,
+      // 2. Safely parse the security deposit
+      final securityDeposit = double.tryParse(_securityDepositController.text.trim()) ?? 0.0;
+
+      // 3. Create a ProductModel instance with all form data
+      final newProduct = ProductModel(
+        productId: productId,
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        category: _selectedCategory!,
+        images: _imageUrls,
+        isAvailable: true, // A new product is available by default
+        rentalPrices: pricingDetails,
+        securityDeposit: securityDeposit,
+        minimumRentalDays: 1,  // Default values you could make configurable in the future
+        maximumRentalDays: 90,
+        rentedPeriods: [], // A new product has no rented periods yet
+        location: {
+          'address': _addressController.text.trim(),
+          'latitude': _latitude!,
+          'longitude': _longitude!,
+          'offersDelivery': _offersDelivery,
         },
-      };
+        ownerId: user.uid,
+        rating: 0.0,
+        totalReviews: 0,
+        createdAt: DateTime.now(), // toMap will handle Timestamp conversion
+        updatedAt: DateTime.now(),
+      );
 
-      await FirebaseFirestore.instance.collection('products').doc(productId).set(productData);
+      // 4. Convert the object to a map and save to Firestore
+      await FirebaseFirestore.instance
+          .collection('products')
+          .doc(productId)
+          .set(newProduct.toMap()); // Using our model's toMap() method!
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Product published successfully')));
-        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Product published successfully!'), backgroundColor: Colors.green),
+        );
+        Navigator.pop(context); // Go back to the previous screen
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error publishing product: ${e.toString()}'), backgroundColor: Colors.red),
+        );
       }
     } finally {
       if (mounted) {
@@ -159,102 +182,116 @@ class _AddProductViewState extends State<AddProductView> {
   }
 
   Future<void> _handleAddPhoto() async {
-    // ... tu código de _handleAddPhoto no cambia ...
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
-    if (picked != null) {
-      // Opcional: mostrar un indicador de carga mientras sube la imagen
-      final url = await CloudinaryService.uploadImage(picked);
-      if (url != null) {
-        setState(() => imageUrls.add(url));
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to upload image')),
-          );
-        }
-      }
+    if (picked == null) return;
+
+    // Show a temporary loading indicator
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Uploading image...')));
+
+    final url = await CloudinaryService.uploadImage(picked);
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar(); // Hide the "uploading" message
+
+    if (url != null) {
+      setState(() => _imageUrls.add(url));
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to upload image')));
     }
   }
 
   void _useMockLocation() {
-    // ... tu código de _useMockLocation no cambia ...
     setState(() {
-      latitude = 10.5;
-      longitude = -66.91;
+      _latitude = 10.5;
+      _longitude = -66.91;
+      _addressController.text = "Plaza Venezuela, Caracas, Venezuela"; // Auto-fill the address
     });
   }
 
-  Widget _buildStep() {
-    switch (currentStep) {
+  Widget _buildStepContent() {
+    switch (_currentStep) {
       case 0:
-        return CategoryStep(selectedCategory: selectedCategory, onCategorySelected: (cat) => setState(() => selectedCategory = cat));
+        return CategoryStep(
+          selectedCategory: _selectedCategory,
+          onCategorySelected: (cat) => setState(() => _selectedCategory = cat),
+        );
       case 1:
-        return AddPhotosStep(photos: imageUrls, onAddPhoto: _handleAddPhoto, onRemovePhoto: (url) => setState(() => imageUrls.remove(url)));
+        return AddPhotosStep(
+          photos: _imageUrls,
+          onAddPhoto: _handleAddPhoto,
+          onRemovePhoto: (url) => setState(() => _imageUrls.remove(url)),
+        );
       case 2:
         return ProductDetailsStep(
-            titleController: titleController, descriptionController: descriptionController,
-            condition: condition, quantity: quantity,
-            onConditionChanged: (val) => setState(() => condition = val ?? 'new'),
-            onQuantityChanged: (val) => setState(() => quantity = val));
+          titleController: _titleController,
+          descriptionController: _descriptionController,
+          condition: _condition,
+          onConditionChanged: (val) => setState(() => _condition = val ?? 'new'),
+        );
       case 3:
         return PricingAvailabilityStep(
-            selectedRates: selectedRates, rateControllers: rateControllers, depositController: depositController,
-            availableDates: availableDates, instantBooking: instantBooking,
-            onToggleInstantBooking: () => setState(() => instantBooking = !instantBooking),
-            onToggleDate: (date) {
-              setState(() {
-                if (availableDates.any((d) => isSameDay(d, date))) {
-                  availableDates.removeWhere((d) => isSameDay(d, date));
-                } else {
-                  availableDates.add(date);
-                }
-              });
-            },
-            onRateTypeToggle: (type) => setState(() => selectedRates[type] = !(selectedRates[type] ?? false)));
+          selectedRates: _selectedRates,
+          rateControllers: _rateControllers,
+          securityDepositController: _securityDepositController,
+          instantBooking: _instantBooking,
+          onToggleInstantBooking: () => setState(() => _instantBooking = !_instantBooking),
+          onRateTypeToggle: (type) => setState(() => _selectedRates[type] = !(_selectedRates[type] ?? false)),
+        );
       case 4:
         return LocationStep(
-            addressController: addressController, latitude: latitude, longitude: longitude,
-            onUseCurrentLocation: _useMockLocation, offersDelivery: offersDelivery,
-            onToggleDelivery: () => setState(() => offersDelivery = !offersDelivery));
+          addressController: _addressController,
+          latitude: _latitude,
+          longitude: _longitude,
+          onUseCurrentLocation: _useMockLocation, // Replace with actual location logic later
+          offersDelivery: _offersDelivery,
+          onToggleDelivery: () => setState(() => _offersDelivery = !_offersDelivery),
+        );
       default:
-        return const SizedBox();
+        return const SizedBox.shrink();
     }
   }
 
-  bool isSameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
-
   @override
   Widget build(BuildContext context) {
-    // El texto del botón cambia en el último paso
-    final buttonText = currentStep < 4 ? 'Next' : 'Publish Product';
+    final buttonText = _currentStep < 4 ? 'Next' : 'Publish Item';
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0B0B),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF0B0B0B),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            if (_currentStep > 0) {
+              setState(() => _currentStep--);
+            } else {
+              Navigator.of(context).pop();
+            }
+          },
+        ),
+      ),
       body: SafeArea(
         child: Column(
           children: [
-            StepHeader(currentStep: currentStep),
+            StepHeader(currentStep: _currentStep),
             const SizedBox(height: 24),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: _buildStep(),
+                child: _buildStepContent(),
               ),
             ),
             const SizedBox(height: 12),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              // <<<--- CAMBIO CLAVE: Usando el ActionButton mejorado ---<<<
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
               child: ActionButton(
                 text: buttonText,
                 isLoading: _isPublishing,
-                // El botón se habilita si el paso es válido y no se está publicando
                 onPressed: isStepValid && !_isPublishing ? _nextStep : null,
-                width: double.infinity, // Ocupa todo el ancho disponible
+                width: double.infinity,
               ),
             ),
-            const SizedBox(height: 24),
           ],
         ),
       ),

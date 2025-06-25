@@ -1,6 +1,10 @@
+// lib/features/search/search_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // <<<--- 1. Importa Provider
+import 'package:rentyapp/core/controllers/controller.dart'; // <<<--- 2. Importa tu AppController
 import 'package:rentyapp/core/theme/app_colors.dart';
-import 'search_list_section.dart';
+import 'package:rentyapp/core/theme/app_text_styles.dart';
+import 'search_list_section.dart'; // Asegúrate que las rutas a tus widgets sean correctas
 import 'search_and_filter_header.dart';
 import 'filter_options_sheet.dart';
 
@@ -15,6 +19,33 @@ class _SearchScreenState extends State<SearchScreen> {
   String _searchQuery = '';
   Map<String, dynamic> _activeFilters = {};
 
+  // <<<--- 3. Lógica para aplicar el filtro inicial al construir la pantalla ---<<<
+  @override
+  void initState() {
+    super.initState();
+    // Usamos addPostFrameCallback para asegurar que el 'context' esté disponible
+    // y para ejecutar este código solo una vez después de que el widget se construya.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Obtenemos una referencia al AppController
+      final appController = context.read<AppController>();
+
+      // Leemos el filtro inicial que pudo haber sido establecido
+      final initialFilter = appController.initialSearchFilter;
+
+      // Si existe un filtro inicial, lo aplicamos al estado local
+      if (initialFilter != null) {
+        setState(() {
+          _activeFilters = initialFilter;
+        });
+
+        // ¡MUY IMPORTANTE! Limpiamos el filtro en el controlador para que no se
+        // aplique de nuevo si el usuario sale y vuelve a esta pantalla.
+        appController.clearInitialSearchFilter();
+      }
+    });
+  }
+
+
   void _onSearchChanged(String query) {
     setState(() {
       _searchQuery = query;
@@ -25,7 +56,7 @@ class _SearchScreenState extends State<SearchScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1F1F1F),
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -52,23 +83,15 @@ class _SearchScreenState extends State<SearchScreen> {
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                // Ajusta el padding según tu diseño. Un poco de espacio vertical arriba es bueno.
                 padding: const EdgeInsets.fromLTRB(20.0, 24.0, 20.0, 16.0),
                 child: Text(
-                  'Search',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 32, // Tamaño grande para que sea un título prominente
-                    fontWeight: FontWeight.bold, // Fuente en negrita para destacar
-                    fontFamily: 'YourAppFont', // Opcional: Reemplaza con tu fuente personalizada
-                  ),
+                  'Buscar',
+                  style: AppTextStyles.headline,
                 ),
               ),
             ),
-
             SliverToBoxAdapter(
               child: Padding(
-                // Se reduce el padding superior de este widget porque el título ya lo proporciona
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: SearchAndFilterHeader(
                   onSearchChanged: _onSearchChanged,
@@ -76,25 +99,12 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
               ),
             ),
-
-
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 24.0),
+            const SliverToBoxAdapter(child: SizedBox(height: 24.0)),
+            ProductListSection(
+              searchQuery: _searchQuery,
+              filters: _activeFilters,
             ),
-
-
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                child: ProductListSection(
-                  searchQuery: _searchQuery,
-                  filters: _activeFilters,
-                ),
-              ),
-            ),
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 24.0),
-            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24.0)),
           ],
         ),
       ),

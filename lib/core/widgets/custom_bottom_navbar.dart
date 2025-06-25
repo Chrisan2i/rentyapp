@@ -1,9 +1,7 @@
+// lib/features/navigation/custom_bottom_navbar.dart
 import 'package:flutter/material.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
-import 'package:rentyapp/core/theme/app_text_styles.dart';
-import 'package:rentyapp/features/profile/profile_view.dart';
-import 'package:rentyapp/features/landing/landing.dart';
-import 'navbar_item.dart';
+import 'package:rentyapp/core/widgets/navbar_item.dart';
 
 class CustomBottomNavBar extends StatelessWidget {
   final int selectedIndex;
@@ -26,28 +24,29 @@ class CustomBottomNavBar extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
+            // <<<--- CAMBIO: Textos traducidos al español ---<<<
             NavBarItem(
-              icon: Icons.home,
-              label: 'Home',
+              icon: Icons.home_filled, // Icono relleno para el seleccionado
+              label: 'Inicio',
               selected: selectedIndex == 0,
               onTap: () => onItemTapped(0),
             ),
             NavBarItem(
               icon: Icons.search,
-              label: 'Search',
+              label: 'Buscar',
               selected: selectedIndex == 1,
               onTap: () => onItemTapped(1),
             ),
-            const SizedBox(width: 40),
+            const SizedBox(width: 40), // Espacio para el FloatingActionButton
             NavBarItem(
-              icon: Icons.inbox,
-              label: 'Rentals',
+              icon: Icons.inbox_outlined, // Puedes usar diferentes íconos
+              label: 'Alquileres',
               selected: selectedIndex == 2,
               onTap: () => onItemTapped(2),
             ),
             NavBarItem(
-              icon: Icons.person,
-              label: 'Profile',
+              icon: Icons.person_outline,
+              label: 'Perfil',
               selected: selectedIndex == 3,
               onTap: () => onItemTapped(3),
             ),
@@ -56,5 +55,4 @@ class CustomBottomNavBar extends StatelessWidget {
       ),
     );
   }
-
 }

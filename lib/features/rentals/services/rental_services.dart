@@ -9,6 +9,7 @@ import 'package:rentyapp/features/send_rental_request/models/rental_request_mode
 import 'package:rentyapp/features/rentals/models/rental_model.dart';
 import 'package:rentyapp/features/notifications/model/notification_model.dart';
 import 'package:rentyapp/features/notifications/service/notification_service.dart';
+import 'package:rentyapp/features/rentals/models/contract_model.dart';
 
 class RentalService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -17,6 +18,16 @@ class RentalService {
   RentalService({required NotificationService notificationService})
       : _notificationService = notificationService;
 
+  /// Crea el documento de contrato bajo rentals/{rentalId}/contract/{contractId}
+  static Future<void> createContract(String rentalId, ContractModel contract) {
+    final rentalRef = FirebaseFirestore.instance
+        .collection('rentals')
+        .doc(rentalId);
+    final contractRef = rentalRef
+        .collection('contract')
+        .doc(contract.contractId);
+    return contractRef.set(contract.toMap());
+  }
   Future<void> createRentalRequest({
     required RentalRequestModel request,
     required String renterName,    // Nombre del que solicita
@@ -205,6 +216,35 @@ class RentalService {
       // 6. Captura cualquier otro error inesperado.
       debugPrint("Error inesperado en confirmAndPayRental: ${e.toString()}");
       throw Exception("Ocurrió un error inesperado. Por favor, intenta de nuevo.");
+    }
+  }
+  Future<void> confirmDelivery(String rentalId) async {
+    try {
+      final rentalRef = _db.collection('rentals').doc(rentalId);
+      await rentalRef.update({
+        'status': RentalStatus.ongoing.name,
+        'deliveryConfirmedAt': FieldValue.serverTimestamp(), // Guarda la fecha de confirmación
+      });
+      debugPrint('✅ Entrega confirmada para el alquiler: $rentalId');
+    } catch (e) {
+      debugPrint('❌ Error al confirmar la entrega: $e');
+      rethrow;
+    }
+  }
+
+  /// El dueño confirma que ha recibido el producto de vuelta.
+  /// Cambia el estado de 'ongoing' a 'completed'.
+  Future<void> completeRental(String rentalId) async {
+    try {
+      final rentalRef = _db.collection('rentals').doc(rentalId);
+      await rentalRef.update({
+        'status': RentalStatus.completed.name,
+        'returnConfirmedAt': FieldValue.serverTimestamp(), // Guarda la fecha de devolución
+      });
+      debugPrint('✅ Alquiler completado: $rentalId');
+    } catch (e) {
+      debugPrint('❌ Error al completar el alquiler: $e');
+      rethrow;
     }
   }
 }

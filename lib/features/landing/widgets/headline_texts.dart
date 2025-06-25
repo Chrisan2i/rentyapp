@@ -1,5 +1,5 @@
+// lib/features/landing/widgets/headline_texts.dart
 import 'package:flutter/material.dart';
-import 'package:rentyapp/core/theme/app_colors.dart';
 import 'package:rentyapp/core/theme/app_text_styles.dart';
 
 class HeadlineTexts extends StatelessWidget {
@@ -10,12 +10,12 @@ class HeadlineTexts extends StatelessWidget {
     return Column(
       children: const [
         Text(
-          'Discover, Rent and Earn',
+          'Descubre, Alquila y Gana',
           style: AppTextStyles.headline,
           textAlign: TextAlign.center,
         ),
         Text(
-          'From Anywhere in Venezuela',
+          'Desde Cualquier Lugar de Venezuela',
           style: AppTextStyles.headlinePrimary,
           textAlign: TextAlign.center,
         ),
