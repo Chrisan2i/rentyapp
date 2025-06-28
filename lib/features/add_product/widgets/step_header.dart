@@ -11,39 +11,44 @@ class StepHeader extends StatelessWidget {
     final primaryColor = const Color(0xFF0085FF);
     final inactiveColor = Colors.white.withOpacity(0.15);
 
+    // AJUSTE DE TAMAÑO: Se redujo el padding vertical de 16 a 8
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       child: Column(
         children: [
           const Text(
-            'Post a New Item',
+            // TRADUCCIÓN: Título principal
+            'Publicar un Nuevo Artículo',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 18,
+              // AJUSTE DE TAMAÑO: Se redujo el tamaño de la fuente de 18 a 17
+              fontSize: 17,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 20),
+          // AJUSTE DE TAMAÑO: Se redujo la separación de 20 a 16
+          const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(totalSteps * 2 - 1, (index) {
-              // Even indices are circles, odd are connectors
               if (index.isEven) {
                 final stepIndex = index ~/ 2;
                 bool isActive = stepIndex <= currentStep;
                 return CircleAvatar(
-                  radius: 16,
+                  // AJUSTE DE TAMAÑO: Se redujo el radio de 16 a 12
+                  radius: 12,
                   backgroundColor: isActive ? primaryColor : inactiveColor,
                   child: Text(
                     '${stepIndex + 1}',
                     style: TextStyle(
                       color: isActive ? Colors.white : Colors.white.withOpacity(0.7),
                       fontWeight: FontWeight.bold,
+                      // AJUSTE DE TAMAÑO: Se ajustó el tamaño de la fuente del número
+                      fontSize: 12,
                     ),
                   ),
                 );
               } else {
-                // Connector line
                 final stepIndex = (index - 1) ~/ 2;
                 bool isActive = stepIndex < currentStep;
                 return Expanded(

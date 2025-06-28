@@ -17,18 +17,19 @@ class CategoryStep extends StatelessWidget {
     return Column(
       children: [
         const Text(
-          'Choose a Category',
+          // TRADUCCIÓN:
+          'Elige una Categoría',
           style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         const Text(
-          'Select the category that best describes your item.',
+          // TRADUCCIÓN:
+          'Selecciona la categoría que mejor describa tu artículo.',
           textAlign: TextAlign.center,
           style: TextStyle(color: Color(0xFF999999), fontSize: 14),
         ),
         const SizedBox(height: 24),
 
-        // Fetch categories from Firestore
         StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
               .collection('categories')
@@ -40,7 +41,8 @@ class CategoryStep extends StatelessWidget {
             }
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
               return const Text(
-                'No categories found.',
+                // TRADUCCIÓN:
+                'No se encontraron categorías.',
                 style: TextStyle(color: Colors.white70),
               );
             }
@@ -54,7 +56,7 @@ class CategoryStep extends StatelessWidget {
               children: docs.map((doc) {
                 final data = doc.data() as Map<String, dynamic>;
                 final slug = data['slug'] as String? ?? '';
-                final name = data['name'] as String? ?? 'No Name';
+                final name = data['name'] as String? ?? 'Sin Nombre'; // TRADUCCIÓN
                 final description = data['description'] as String? ?? '';
                 final iconUrl = data['iconUrl'] as String? ?? '';
 
@@ -78,7 +80,7 @@ class CategoryStep extends StatelessWidget {
                         if (iconUrl.isNotEmpty)
                           Image.network(iconUrl, width: 48, height: 48, fit: BoxFit.contain)
                         else
-                          const SizedBox(height: 48), // Placeholder if no icon
+                          const SizedBox(height: 48),
                         const SizedBox(height: 8),
                         Text(
                           name,

@@ -22,28 +22,34 @@ class PricingAvailabilityStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // TRADUCCIÓN:
     final rateTypes = {
-      'day': 'Per Day',
-      'week': 'Per Week',
-      'month': 'Per Month',
+      'day': 'Por Día',
+      'week': 'Por Semana',
+      'month': 'Por Mes',
     };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Pricing & Deposit',
+          // TRADUCCIÓN:
+          'Precios y Depósito',
           style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         const Text(
-          'Set your rental rates and security deposit.',
+          // TRADUCCIÓN:
+          'Establece tus tarifas de alquiler y el depósito de seguridad.',
           style: TextStyle(color: Color(0xFF999999), fontSize: 14),
         ),
         const SizedBox(height: 24),
 
-        // --- Rental Rates Section ---
-        const Text('Rental Rates', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600, fontSize: 16)),
+        const Text(
+          // TRADUCCIÓN:
+            'Tarifas de Alquiler',
+            style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600, fontSize: 16)
+        ),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -103,11 +109,15 @@ class PricingAvailabilityStep extends StatelessWidget {
         ),
         const SizedBox(height: 24),
 
-        // --- Security Deposit Section ---
-        const Text('Security Deposit', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600, fontSize: 16)),
+        const Text(
+          // TRADUCCIÓN:
+            'Depósito de Seguridad',
+            style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600, fontSize: 16)
+        ),
         const SizedBox(height: 4),
         const Text(
-          'This amount is held and returned after the rental if the item is undamaged. Set to 0 for no deposit.',
+          // TRADUCCIÓN:
+          'Esta cantidad se retiene y se devuelve después del alquiler si el artículo no sufre daños. Pon 0 si no hay depósito.',
           style: TextStyle(color: Color(0xFF999999), fontSize: 12),
         ),
         const SizedBox(height: 12),
@@ -117,7 +127,8 @@ class PricingAvailabilityStep extends StatelessWidget {
           inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
           style: const TextStyle(color: Colors.white),
           decoration: const InputDecoration(
-            labelText: 'Security Deposit Amount',
+            // TRADUCCIÓN:
+            labelText: 'Monto del Depósito de Seguridad',
             labelStyle: TextStyle(color: Color(0xFF999999)),
             filled: true,
             fillColor: Color(0xFF1A1A1A),
@@ -128,7 +139,6 @@ class PricingAvailabilityStep extends StatelessWidget {
         ),
 
         const SizedBox(height: 24),
-        // --- Instant Booking Section ---
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
@@ -138,7 +148,11 @@ class PricingAvailabilityStep extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Enable Instant Booking', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500)),
+              const Text(
+                // TRADUCCIÓN:
+                  'Habilitar Reserva Inmediata',
+                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500)
+              ),
               Switch(
                 value: instantBooking,
                 onChanged: (_) => onToggleInstantBooking(),

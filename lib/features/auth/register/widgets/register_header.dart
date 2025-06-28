@@ -14,12 +14,12 @@ class RegisterHeader extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Join Renty',
+              'Únete a Renty',
               style: AppTextStyles.loginTitle, // Reutilizando un estilo adecuado
             ),
             SizedBox(height: 10),
             Text(
-              "Venezuela's top rental marketplace",
+              "El principal mercado de alquileres en Venezuela",
               style: AppTextStyles.subtitle,
               textAlign: TextAlign.center,
             ),

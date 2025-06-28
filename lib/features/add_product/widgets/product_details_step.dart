@@ -21,12 +21,14 @@ class ProductDetailsStep extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Product Details',
+          // TRADUCCIÓN:
+          'Detalles del Producto',
           style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         const Text(
-          'A great title and description attract more renters.',
+          // TRADUCCIÓN:
+          'Un buen título y descripción atraen a más arrendatarios.',
           textAlign: TextAlign.center,
           style: TextStyle(color: Color(0xFF999999), fontSize: 14),
         ),
@@ -36,7 +38,8 @@ class ProductDetailsStep extends StatelessWidget {
           controller: titleController,
           style: const TextStyle(color: Colors.white),
           decoration: const InputDecoration(
-            labelText: 'Product Title',
+            // TRADUCCIÓN:
+            labelText: 'Título del Producto',
             filled: true,
             fillColor: Color(0xFF1A1A1A),
             border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
@@ -50,7 +53,8 @@ class ProductDetailsStep extends StatelessWidget {
           style: const TextStyle(color: Colors.white),
           maxLines: 4,
           decoration: const InputDecoration(
-            labelText: 'Description',
+            // TRADUCCIÓN:
+            labelText: 'Descripción',
             alignLabelWithHint: true,
             filled: true,
             fillColor: Color(0xFF1A1A1A),
@@ -66,17 +70,19 @@ class ProductDetailsStep extends StatelessWidget {
           dropdownColor: const Color(0xFF1A1A1A),
           style: const TextStyle(color: Colors.white),
           decoration: const InputDecoration(
-            labelText: 'Condition',
+            // TRADUCCIÓN:
+            labelText: 'Condición',
             labelStyle: TextStyle(color: Color(0xFF999999)),
             filled: true,
             fillColor: Color(0xFF1A1A1A),
             border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
           ),
           items: const [
-            DropdownMenuItem(value: 'new', child: Text('New')),
-            DropdownMenuItem(value: 'used', child: Text('Used - Like New')),
-            DropdownMenuItem(value: 'used-good', child: Text('Used - Good')),
-            DropdownMenuItem(value: 'used-fair', child: Text('Used - Fair')),
+            // TRADUCCIÓN:
+            DropdownMenuItem(value: 'new', child: Text('Nuevo')),
+            DropdownMenuItem(value: 'used', child: Text('Usado - Como nuevo')),
+            DropdownMenuItem(value: 'used-good', child: Text('Usado - Buen estado')),
+            DropdownMenuItem(value: 'used-fair', child: Text('Usado - Aceptable')),
           ],
         ),
       ],

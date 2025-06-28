@@ -4,8 +4,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
-
-// --- Models, Widgets & Services ---
 import 'package:rentyapp/features/product/models/product_model.dart';
 import 'package:rentyapp/features/add_product/widgets/step_header.dart';
 import 'package:rentyapp/features/add_product/widgets/category_step.dart';
@@ -14,7 +12,7 @@ import 'package:rentyapp/features/add_product/widgets/product_details_step.dart'
 import 'package:rentyapp/features/add_product/widgets/pricing_availability_step.dart';
 import 'package:rentyapp/features/add_product/widgets/location_step.dart';
 import 'package:rentyapp/core/widgets/cloudinary_service.dart';
-import 'package:rentyapp/features/add_product/widgets/next_button.dart'; // Renamed for consistency
+import 'package:rentyapp/features/add_product/widgets/next_button.dart';
 
 class AddProductView extends StatefulWidget {
   const AddProductView({super.key});
@@ -27,7 +25,6 @@ class _AddProductViewState extends State<AddProductView> {
   int _currentStep = 0;
   bool _isPublishing = false;
 
-  // --- Step Data ---
   String? _selectedCategory;
   final List<String> _imageUrls = [];
   final _titleController = TextEditingController();
@@ -48,7 +45,6 @@ class _AddProductViewState extends State<AddProductView> {
   double? _longitude;
   bool _offersDelivery = false;
 
-  // Getter to validate the current step
   bool get isStepValid {
     switch (_currentStep) {
       case 0:
@@ -58,7 +54,6 @@ class _AddProductViewState extends State<AddProductView> {
       case 2:
         return _titleController.text.trim().isNotEmpty && _descriptionController.text.trim().isNotEmpty;
       case 3:
-      // Validates that at least one rate is selected and has a valid numeric value > 0.
         return _selectedRates.entries.any((entry) {
           if (entry.value) {
             final value = _rateControllers[entry.key]?.text.trim();
@@ -76,7 +71,6 @@ class _AddProductViewState extends State<AddProductView> {
   @override
   void initState() {
     super.initState();
-    // Add listeners to rebuild the UI when form fields change (e.g., to enable/disable the next button)
     _titleController.addListener(_rebuild);
     _descriptionController.addListener(_rebuild);
     _addressController.addListener(_rebuild);
@@ -107,7 +101,6 @@ class _AddProductViewState extends State<AddProductView> {
     }
   }
 
-  // --- Refined Product Submission Logic ---
   Future<void> _submitProduct() async {
     if (!isStepValid) return;
     setState(() => _isPublishing = true);
@@ -115,34 +108,32 @@ class _AddProductViewState extends State<AddProductView> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        throw Exception('User not authenticated. Please log in.');
+        // TRADUCCIÓN:
+        throw Exception('Usuario no autenticado. Por favor, inicia sesión.');
       }
 
       final productId = const Uuid().v4();
 
-      // 1. Build the PricingDetails object from controllers
       final pricingDetails = PricingDetails(
         perDay: _selectedRates['day']! ? double.tryParse(_rateControllers['day']!.text.trim()) : null,
         perWeek: _selectedRates['week']! ? double.tryParse(_rateControllers['week']!.text.trim()) : null,
         perMonth: _selectedRates['month']! ? double.tryParse(_rateControllers['month']!.text.trim()) : null,
       );
 
-      // 2. Safely parse the security deposit
       final securityDeposit = double.tryParse(_securityDepositController.text.trim()) ?? 0.0;
 
-      // 3. Create a ProductModel instance with all form data
       final newProduct = ProductModel(
         productId: productId,
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
         category: _selectedCategory!,
         images: _imageUrls,
-        isAvailable: true, // A new product is available by default
+        isAvailable: true,
         rentalPrices: pricingDetails,
         securityDeposit: securityDeposit,
-        minimumRentalDays: 1,  // Default values you could make configurable in the future
+        minimumRentalDays: 1,
         maximumRentalDays: 90,
-        rentedPeriods: [], // A new product has no rented periods yet
+        rentedPeriods: [],
         location: {
           'address': _addressController.text.trim(),
           'latitude': _latitude!,
@@ -152,26 +143,27 @@ class _AddProductViewState extends State<AddProductView> {
         ownerId: user.uid,
         rating: 0.0,
         totalReviews: 0,
-        createdAt: DateTime.now(), // toMap will handle Timestamp conversion
+        createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
-      // 4. Convert the object to a map and save to Firestore
       await FirebaseFirestore.instance
           .collection('products')
           .doc(productId)
-          .set(newProduct.toMap()); // Using our model's toMap() method!
+          .set(newProduct.toMap());
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Product published successfully!'), backgroundColor: Colors.green),
+          // TRADUCCIÓN:
+          const SnackBar(content: Text('¡Producto publicado con éxito!'), backgroundColor: Colors.green),
         );
-        Navigator.pop(context); // Go back to the previous screen
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error publishing product: ${e.toString()}'), backgroundColor: Colors.red),
+          // TRADUCCIÓN:
+          SnackBar(content: Text('Error al publicar el producto: ${e.toString()}'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -186,17 +178,17 @@ class _AddProductViewState extends State<AddProductView> {
     final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
     if (picked == null) return;
 
-    // Show a temporary loading indicator
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Uploading image...')));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cargando imagen...')));
 
     final url = await CloudinaryService.uploadImage(picked);
 
-    ScaffoldMessenger.of(context).hideCurrentSnackBar(); // Hide the "uploading" message
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
     if (url != null) {
       setState(() => _imageUrls.add(url));
     } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to upload image')));
+      // TRADUCCIÓN:
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error al subir la imagen')));
     }
   }
 
@@ -204,7 +196,7 @@ class _AddProductViewState extends State<AddProductView> {
     setState(() {
       _latitude = 10.5;
       _longitude = -66.91;
-      _addressController.text = "Plaza Venezuela, Caracas, Venezuela"; // Auto-fill the address
+      _addressController.text = "Plaza Venezuela, Caracas, Venezuela";
     });
   }
 
@@ -226,7 +218,7 @@ class _AddProductViewState extends State<AddProductView> {
           titleController: _titleController,
           descriptionController: _descriptionController,
           condition: _condition,
-          onConditionChanged: (val) => setState(() => _condition = val ?? 'new'),
+          onConditionChanged: (val) => setState(() => _condition = val ?? 'nuevo'),
         );
       case 3:
         return PricingAvailabilityStep(
@@ -242,7 +234,7 @@ class _AddProductViewState extends State<AddProductView> {
           addressController: _addressController,
           latitude: _latitude,
           longitude: _longitude,
-          onUseCurrentLocation: _useMockLocation, // Replace with actual location logic later
+          onUseCurrentLocation: _useMockLocation,
           offersDelivery: _offersDelivery,
           onToggleDelivery: () => setState(() => _offersDelivery = !_offersDelivery),
         );
@@ -253,7 +245,8 @@ class _AddProductViewState extends State<AddProductView> {
 
   @override
   Widget build(BuildContext context) {
-    final buttonText = _currentStep < 4 ? 'Next' : 'Publish Item';
+    // TRADUCCIÓN:
+    final buttonText = _currentStep < 4 ? 'Siguiente' : 'Publicar Producto';
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0B0B),

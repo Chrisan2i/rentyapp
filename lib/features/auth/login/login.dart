@@ -95,22 +95,22 @@ class _LoginPageState extends State<LoginPage> {
 
                 CustomTextFormField(
                   controller: _emailController,
-                  labelText: 'Email Address',
-                  hintText: 'Enter your email',
+                  labelText: 'Correo Electrónico',
+                  hintText: 'Ingresa tu correo',
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty) return 'Please enter your email';
-                    if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) return 'Please enter a valid email address';
+                    if (value == null || value.trim().isEmpty) return 'Por favor, ingresa tu correo';
+                    if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) return 'Por favor, ingresa un correo válido';
                     return null;
                   },
                 ),
                 const SizedBox(height: 20),
                 CustomTextFormField(
                   controller: _passwordController,
-                  labelText: 'Password',
-                  hintText: 'Enter your password',
+                  labelText: 'Contraseña',
+                  hintText: 'Ingresa tu contraseña',
                   isPassword: true,
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'Please enter your password';
+                    if (value == null || value.isEmpty) return 'Por favor, ingresa tu contraseña';
                     return null;
                   },
                 ),
@@ -130,12 +130,12 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Text('Remember me', style: AppTextStyles.subtitle),
+                        const Text('Recuérdame', style: AppTextStyles.subtitle),
                       ],
                     ),
                     TextButton(
                       onPressed: () { /* TODO: Implementar */ },
-                      child: const Text('Forgot password?', style: AppTextStyles.bannerAction),
+                      child: const Text('¿Olvidaste tu contraseña?', style: AppTextStyles.bannerAction),
                     ),
                   ],
                 ),
@@ -144,7 +144,7 @@ class _LoginPageState extends State<LoginPage> {
                     padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
                     child: Center(
                       child: Text(
-                        controller.errorMessage ?? 'Ocurrió un error',
+                        controller.errorMessage ?? 'Ocurrió un error inesperado.',
                         style: AppTextStyles.errorText,
                         textAlign: TextAlign.center,
                       ),
@@ -162,7 +162,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     child: isLoading
                         ? const CircularProgressIndicator(color: AppColors.white)
-                        : const Text('Log In', style: AppTextStyles.loginButton),
+                        : const Text('Iniciar Sesión', style: AppTextStyles.loginButton),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -171,7 +171,7 @@ class _LoginPageState extends State<LoginPage> {
                     const Expanded(child: Divider(color: AppColors.white10)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Text('or continue with', style: AppTextStyles.subtitle),
+                      child: Text('o continúa con', style: AppTextStyles.subtitle),
                     ),
                     const Expanded(child: Divider(color: AppColors.white10)),
                   ],
@@ -200,11 +200,11 @@ class _LoginPageState extends State<LoginPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text("Don't have an account? ", style: AppTextStyles.subtitle),
+                    const Text("¿No tienes una cuenta? ", style: AppTextStyles.subtitle),
                     TextButton(
                       onPressed: () => Navigator.pushNamed(context, '/register'),
                       style: TextButton.styleFrom(padding: EdgeInsets.zero),
-                      child: const Text('Sign Up', style: AppTextStyles.bannerAction),
+                      child: const Text('Regístrate', style: AppTextStyles.bannerAction),
                     ),
                   ],
                 ),

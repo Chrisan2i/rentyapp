@@ -1,3 +1,4 @@
+// lib/features/auth/register/widgets/register_footer.dart
 import 'package:flutter/material.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
 import 'package:rentyapp/core/theme/app_text_styles.dart';
@@ -27,7 +28,7 @@ class RegisterFooter extends StatelessWidget {
             child: Center(
               child: isLoading
                   ? const CircularProgressIndicator(color: AppColors.white)
-                  : const Text('Sign Up', style: AppTextStyles.button),
+                  : const Text('Registrarse', style: AppTextStyles.button),
             ),
           ),
         ),
@@ -35,10 +36,10 @@ class RegisterFooter extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text("Already have an account? ", style: AppTextStyles.subtitle),
+            const Text("¿Ya tienes una cuenta? ", style: AppTextStyles.subtitle),
             GestureDetector(
               onTap: () => Navigator.pushReplacementNamed(context, '/login'),
-              child: const Text('Log in', style: AppTextStyles.bannerAction),
+              child: const Text('Inicia sesión', style: AppTextStyles.bannerAction),
             ),
           ],
         ),

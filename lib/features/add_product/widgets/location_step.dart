@@ -25,12 +25,14 @@ class LocationStep extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Set Location',
+          // TRADUCCIÓN:
+          'Establecer Ubicación',
           style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         const Text(
-          'Specify where your item is located.',
+          // TRADUCCIÓN:
+          'Especifica dónde se encuentra tu artículo.',
           style: TextStyle(color: Color(0xFF999999), fontSize: 14),
         ),
         const SizedBox(height: 24),
@@ -39,7 +41,8 @@ class LocationStep extends StatelessWidget {
           controller: addressController,
           style: const TextStyle(color: Colors.white),
           decoration: const InputDecoration(
-            labelText: 'Address or Area',
+            // TRADUCCIÓN:
+            labelText: 'Dirección o Zona',
             labelStyle: TextStyle(color: Color(0xFF999999)),
             filled: true,
             fillColor: Color(0xFF1A1A1A),
@@ -58,7 +61,8 @@ class LocationStep extends StatelessWidget {
         ElevatedButton.icon(
           onPressed: onUseCurrentLocation,
           icon: const Icon(Icons.my_location, size: 20),
-          label: const Text("Use Current Location (Mock)"),
+          // TRADUCCIÓN:
+          label: const Text("Usar Ubicación Actual (Simulada)"),
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF0085FF).withOpacity(0.15),
             foregroundColor: const Color(0xFF0085FF),
@@ -72,7 +76,8 @@ class LocationStep extends StatelessWidget {
             padding: const EdgeInsets.only(top: 12),
             child: Center(
               child: Text(
-                '📍 Location Set: (${latitude!.toStringAsFixed(4)}, ${longitude!.toStringAsFixed(4)})',
+                // TRADUCCIÓN:
+                '📍 Ubicación Fijada: (${latitude!.toStringAsFixed(4)}, ${longitude!.toStringAsFixed(4)})',
                 style: const TextStyle(color: Colors.white70, fontSize: 12),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -81,7 +86,6 @@ class LocationStep extends StatelessWidget {
 
         const SizedBox(height: 24),
 
-        // Delivery Option
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
@@ -92,7 +96,8 @@ class LocationStep extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Offer Delivery?',
+                // TRADUCCIÓN:
+                '¿Ofrecer Entrega a Domicilio?',
                 style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
               ),
               Switch(

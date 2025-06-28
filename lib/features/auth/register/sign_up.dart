@@ -64,7 +64,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
     if (!_termsAccepted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You must accept the Terms of Service and Privacy Policy.')),
+        const SnackBar(content: Text('Debes aceptar los Términos de Servicio y la Política de Privacidad.')),
       );
       return;
     }
@@ -95,17 +95,17 @@ class _RegisterPageState extends State<RegisterPage> {
               children: [
                 const RegisterHeader(),
                 const SizedBox(height: 32),
-                CustomTextFormField(controller: _fullNameController, labelText: 'Full Name', hintText: 'Your full name', validator: (v) => v!.isEmpty ? 'Full name is required' : null),
+                CustomTextFormField(controller: _fullNameController, labelText: 'Nombre Completo', hintText: 'Tu nombre completo', validator: (v) => v!.isEmpty ? 'El nombre completo es requerido' : null),
                 const SizedBox(height: 16),
-                CustomTextFormField(controller: _usernameController, labelText: 'Username (Optional)', hintText: 'Choose a username'),
+                CustomTextFormField(controller: _usernameController, labelText: 'Usuario (Opcional)', hintText: 'Elige un nombre de usuario'),
                 const SizedBox(height: 16),
-                CustomTextFormField(controller: _emailController, labelText: 'Email Address', hintText: 'Enter your email', validator: (v) => (v!.isEmpty || !v.contains('@')) ? 'A valid email is required' : null),
+                CustomTextFormField(controller: _emailController, labelText: 'Correo Electrónico', hintText: 'Ingresa tu correo', validator: (v) => (v!.isEmpty || !v.contains('@')) ? 'Se requiere un correo válido' : null),
                 const SizedBox(height: 16),
-                CustomTextFormField(controller: _phoneController, labelText: 'Phone Number', hintText: '(+58) 123 456 7890'),
+                CustomTextFormField(controller: _phoneController, labelText: 'Número de Teléfono', hintText: '(+58) 412 123 4567'),
                 const SizedBox(height: 16),
-                CustomTextFormField(controller: _passwordController, labelText: 'Password', hintText: 'Create a password', isPassword: true, validator: (v) => v!.length < 6 ? 'Password must be at least 6 characters' : null),
+                CustomTextFormField(controller: _passwordController, labelText: 'Contraseña', hintText: 'Crea una contraseña', isPassword: true, validator: (v) => v!.length < 6 ? 'La contraseña debe tener al menos 6 caracteres' : null),
                 const SizedBox(height: 16),
-                CustomTextFormField(controller: _confirmPasswordController, labelText: 'Confirm Password', hintText: 'Repeat password', isPassword: true, validator: (v) => v != _passwordController.text ? 'Passwords do not match' : null),
+                CustomTextFormField(controller: _confirmPasswordController, labelText: 'Confirmar Contraseña', hintText: 'Repite la contraseña', isPassword: true, validator: (v) => v != _passwordController.text ? 'Las contraseñas no coinciden' : null),
                 const SizedBox(height: 24),
                 Row(
                   children: [
@@ -116,10 +116,10 @@ class _RegisterPageState extends State<RegisterPage> {
                         text: TextSpan(
                           style: AppTextStyles.subtitle,
                           children: [
-                            const TextSpan(text: 'I accept the '),
-                            TextSpan(text: 'Terms of Service', style: AppTextStyles.bannerAction, recognizer: TapGestureRecognizer()..onTap = () => print('Open ToS')),
-                            const TextSpan(text: ' and '),
-                            TextSpan(text: 'Privacy Policy', style: AppTextStyles.bannerAction, recognizer: TapGestureRecognizer()..onTap = () => print('Open Privacy Policy')),
+                            const TextSpan(text: 'Acepto los '),
+                            TextSpan(text: 'Términos de Servicio', style: AppTextStyles.bannerAction, recognizer: TapGestureRecognizer()..onTap = () => print('Abrir Términos de Servicio')),
+                            const TextSpan(text: ' y la '),
+                            TextSpan(text: 'Política de Privacidad', style: AppTextStyles.bannerAction, recognizer: TapGestureRecognizer()..onTap = () => print('Abrir Política de Privacidad')),
                           ],
                         ),
                       ),
@@ -134,16 +134,14 @@ class _RegisterPageState extends State<RegisterPage> {
                   child: ElevatedButton(
                     onPressed: isLoading ? null : _submitRegister,
                     style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, disabledBackgroundColor: AppColors.primary.withOpacity(0.5)),
-                    child: isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Sign Up', style: AppTextStyles.button),
+                    child: isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Registrarse', style: AppTextStyles.button),
                   ),
                 ),
                 const SizedBox(height: 32),
-                Row(children: [const Expanded(child: Divider(color: AppColors.white10)), Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Text('or continue with', style: AppTextStyles.subtitle)), const Expanded(child: Divider(color: AppColors.white10))]),
+                Row(children: [const Expanded(child: Divider(color: AppColors.white10)), Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Text('o regístrate con', style: AppTextStyles.subtitle)), const Expanded(child: Divider(color: AppColors.white10))]),
                 const SizedBox(height: 24),
                 Row(
                   children: [
-                    // <<<--- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---<<<
-                    // La ruta ahora incluye la carpeta 'images' que creamos.
                     Expanded(child: LoginSocialButton(label: 'Google', icon: Image.asset('assets/google_logo.png', height: 22), onTap: () {})),
                     const SizedBox(width: 16),
                     Expanded(child: LoginSocialButton(label: 'Apple', icon: const FaIcon(FontAwesomeIcons.apple, color: Colors.white, size: 26), onTap: () {})),
@@ -153,14 +151,14 @@ class _RegisterPageState extends State<RegisterPage> {
                 Container(
                   height: 50,
                   decoration: BoxDecoration(border: Border.all(color: AppColors.white10), borderRadius: BorderRadius.circular(8)),
-                  child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.lock_outline, color: AppColors.textSecondary, size: 16), SizedBox(width: 8), Text('Your information is encrypted and protected', style: AppTextStyles.subtitle)]),
+                  child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.lock_outline, color: AppColors.textSecondary, size: 16), SizedBox(width: 8), Text('Tu información está encriptada y protegida', style: AppTextStyles.subtitle)]),
                 ),
                 const SizedBox(height: 32),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text("Already have an account? ", style: AppTextStyles.subtitle),
-                    InkWell(onTap: () => Navigator.pop(context), child: const Text('Log in', style: AppTextStyles.bannerAction)),
+                    const Text("¿Ya tienes una cuenta? ", style: AppTextStyles.subtitle),
+                    InkWell(onTap: () => Navigator.pop(context), child: const Text('Inicia sesión', style: AppTextStyles.bannerAction)),
                   ],
                 )
               ],
