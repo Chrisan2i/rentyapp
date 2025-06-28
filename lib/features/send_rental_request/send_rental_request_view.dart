@@ -2,7 +2,7 @@
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // Import for Provider is kept as in your original code
+import 'package:provider/provider.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
 import 'package:rentyapp/features/product/models/product_model.dart';
 import 'package:rentyapp/features/rentals/services/rental_services.dart';
@@ -30,7 +30,6 @@ class _SendRentalRequestViewState extends State<SendRentalRequestView> {
   int get _daysRequested =>
       _endDate != null && _startDate != null ? _endDate!.difference(_startDate!).inDays + 1 : 0;
 
-  // Safely get the price, defaulting to 0.0 if not available
   double get _pricePerDay => widget.product.rentalPrices.perDay ?? 0.0;
   double get _subtotal => _daysRequested * _pricePerDay;
   static const double vatRate = 0.16; // Kept your VAT logic
@@ -45,7 +44,6 @@ class _SendRentalRequestViewState extends State<SendRentalRequestView> {
 
   Future<void> _pickDateRange() async {
     final now = DateTime.now();
-    // A minimal aesthetic improvement: theming the date picker to match your app
     final newDateRange = await showDateRangePicker(
       context: context,
       initialDateRange: _startDate != null && _endDate != null
@@ -53,6 +51,8 @@ class _SendRentalRequestViewState extends State<SendRentalRequestView> {
           : null,
       firstDate: DateTime(now.year, now.month, now.day),
       lastDate: now.add(const Duration(days: 365)),
+      // TRADUCCIÓN: Textos del calendario a español (esto lo hace Flutter automáticamente si el dispositivo está en español)
+      locale: const Locale('es', 'ES'),
       builder: (context, child) {
         return Theme(
           data: ThemeData.dark().copyWith(
@@ -80,19 +80,18 @@ class _SendRentalRequestViewState extends State<SendRentalRequestView> {
   Future<void> _submitRequest() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
-      // Text translated
+      // TRADUCCIÓN: Mensaje de error para el usuario
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('You must be logged in to send a request.'), backgroundColor: AppColors.error));
+          const SnackBar(content: Text('Debes iniciar sesión para enviar una solicitud.'), backgroundColor: AppColors.error));
       return;
     }
 
-    // Using Provider to get the service instance, as corrected in your code
     final rentalService = context.read<RentalService>();
 
     setState(() => _isLoading = true);
 
     final request = RentalRequestModel(
-      requestId: '', // Firestore generates this
+      requestId: '',
       productId: widget.product.productId,
       ownerId: widget.product.ownerId,
       renterId: currentUser.uid,
@@ -102,7 +101,6 @@ class _SendRentalRequestViewState extends State<SendRentalRequestView> {
       createdAt: DateTime.now(),
       expiresAt: DateTime.now().add(const Duration(hours: 48)),
       messageToOwner: _messageController.text.trim(),
-      // Your original financial structure is preserved
       financials: {
         'pricePerDay': _pricePerDay,
         'daysRequested': _daysRequested.toDouble(),
@@ -115,15 +113,15 @@ class _SendRentalRequestViewState extends State<SendRentalRequestView> {
     try {
       await rentalService.createRentalRequest(
         request: request,
-        renterName: currentUser.displayName ?? 'A user',
+        renterName: currentUser.displayName ?? 'Un usuario',
         productTitle: widget.product.title,
       );
 
       if (mounted) {
-        // Text translated
+        // TRADUCCIÓN: Mensaje de éxito
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Request sent successfully!'),
+            content: Text('✅ ¡Solicitud enviada con éxito!'),
             backgroundColor: AppColors.success,
           ),
         );
@@ -131,10 +129,9 @@ class _SendRentalRequestViewState extends State<SendRentalRequestView> {
       }
     } catch (e) {
       if (mounted) {
-        // Text translated
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error sending request: ${e.toString()}'),
+            content: Text('Error al enviar la solicitud: ${e.toString()}'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -148,14 +145,15 @@ class _SendRentalRequestViewState extends State<SendRentalRequestView> {
 
   @override
   Widget build(BuildContext context) {
-    // Using a more readable date format
-    final formatter = DateFormat('MMM d, yyyy');
+    // TRADUCCIÓN: Usamos un formato de fecha más natural para español.
+    // Esto funciona porque en tu main.dart ya inicializaste el locale 'es_ES'.
+    final formatter = DateFormat("d 'de' MMMM, yyyy", 'es_ES');
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        // Text translated
-        title: const Text('Rental Request'),
+        // TRADUCCIÓN: Título de la pantalla
+        title: const Text('Solicitud de Renta'),
         backgroundColor: AppColors.surface,
         elevation: 0,
       ),
@@ -166,53 +164,52 @@ class _SendRentalRequestViewState extends State<SendRentalRequestView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Text translated
-              Text('You are requesting to rent:', style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
+              // TRADUCCIÓN: Texto informativo
+              Text('Estás solicitando rentar:', style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
               const SizedBox(height: 8),
               Text(widget.product.title, style: const TextStyle(color: AppColors.white, fontSize: 22, fontWeight: FontWeight.bold)),
               const SizedBox(height: 24),
 
-              // --- Dates Section (Structure preserved) ---
+              // --- Dates Section ---
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.calendar_today, color: AppColors.primary),
-                // Text translated
-                title: const Text('Rental Dates', style: TextStyle(color: AppColors.white, fontWeight: FontWeight.bold)),
+                // TRADUCCIÓN: Título de la sección de fechas
+                title: const Text('Fechas de la Renta', style: TextStyle(color: AppColors.white, fontWeight: FontWeight.bold)),
                 subtitle: Text(
-                  // Text translated and using a cleaner format
-                  _startDate == null ? 'Select start and end dates' : '${formatter.format(_startDate!)} - ${formatter.format(_endDate!)}',
+                  // TRADUCCIÓN: Texto de ayuda para seleccionar fechas
+                  _startDate == null ? 'Selecciona las fechas de inicio y fin' : '${formatter.format(_startDate!)} - ${formatter.format(_endDate!)}',
                   style: TextStyle(color: AppColors.textSecondary),
                 ),
                 onTap: _pickDateRange,
               ),
               const Divider(color: AppColors.surface),
 
-              // --- Payment Summary Section (Structure preserved) ---
+              // --- Payment Summary Section ---
               if (_daysRequested > 0) ...[
                 const SizedBox(height: 16),
-                // Text translated
-                const Text('Price Summary', style: TextStyle(color: AppColors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                // TRADUCCIÓN: Título del resumen de precios
+                const Text('Resumen del Precio', style: TextStyle(color: AppColors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
-                // All labels translated
-                _buildPriceRow('Price per day:', '\$${_pricePerDay.toStringAsFixed(2)}'),
-                _buildPriceRow('Number of days:', '$_daysRequested'),
+                // TRADUCCIÓN: Etiquetas de precios
+                _buildPriceRow('Precio por día:', '\$${_pricePerDay.toStringAsFixed(2)}'),
+                _buildPriceRow('Número de días:', '$_daysRequested'),
                 _buildPriceRow('Subtotal:', '\$${_subtotal.toStringAsFixed(2)}'),
-                _buildPriceRow('VAT (16%):', '\$${_vat.toStringAsFixed(2)}'),
+                _buildPriceRow('IVA (16%):', '\$${_vat.toStringAsFixed(2)}'), // VAT -> IVA
                 const Divider(color: AppColors.surface, height: 24),
                 _buildPriceRow('Total:', '\$${_total.toStringAsFixed(2)}', isTotal: true),
                 const SizedBox(height: 24),
               ],
 
-              // --- Message Section (Structure preserved) ---
+              // --- Message Section ---
               TextFormField(
                 controller: _messageController,
                 style: const TextStyle(color: AppColors.white),
                 maxLines: 3,
                 decoration: InputDecoration(
-                  // Texts translated
-                  labelText: 'Message to the owner (optional)',
+                  labelText: 'Mensaje para el propietario (opcional)',
                   labelStyle: TextStyle(color: AppColors.textSecondary),
-                  hintText: 'e.g., "I need it for a weekend project."',
+                  hintText: 'p. ej., "Lo necesito para un proyecto de fin de semana."', // e.g. -> p. ej.
                   hintStyle: const TextStyle(color: AppColors.hint),
                   filled: true,
                   fillColor: AppColors.surface,
@@ -223,7 +220,7 @@ class _SendRentalRequestViewState extends State<SendRentalRequestView> {
               ),
               const SizedBox(height: 32),
 
-              // --- Submit Button (Structure preserved) ---
+              // --- Submit Button ---
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -232,13 +229,12 @@ class _SendRentalRequestViewState extends State<SendRentalRequestView> {
                     backgroundColor: AppColors.primary,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    // Minimal aesthetic improvement: visual feedback for disabled state
                     disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
                   ),
                   child: _isLoading
                       ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
-                  // Text translated
-                      : const Text('Send Rental Request', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  // TRADUCCIÓN: Texto del botón principal
+                      : const Text('Enviar Solicitud de Renta', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -248,14 +244,12 @@ class _SendRentalRequestViewState extends State<SendRentalRequestView> {
     );
   }
 
-  // This helper method is perfect, no changes needed
   Widget _buildPriceRow(String label, String value, {bool isTotal = false}) {
     final style = TextStyle(
       color: isTotal ? AppColors.white : AppColors.textSecondary,
       fontSize: isTotal ? 18 : 16,
       fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
     );
-    // Minimal aesthetic improvement: Value is always white for better contrast
     final valueStyle = style.copyWith(color: AppColors.white);
 
     return Padding(

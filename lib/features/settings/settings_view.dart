@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:rentyapp/core/theme/app_colors.dart';
 import 'package:rentyapp/core/theme/app_text_styles.dart';
-import 'package:rentyapp/features/auth/login/login.dart';
 import 'package:rentyapp/features/profile/edit/edit_profile_view.dart';
 import 'package:rentyapp/features/auth/services/auth_service.dart';
 import 'widgets/section_title.dart';
@@ -13,6 +13,9 @@ class SettingsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Obtenemos la instancia de AuthService desde Provider una sola vez.
+    final authService = Provider.of<AuthService>(context, listen: false);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -111,14 +114,14 @@ class SettingsView extends StatelessWidget {
 
                       if (confirm == true) {
                         try {
-                          await AuthService().deleteAccount();
-                          if (context.mounted) {
-                            Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
-                          }
+                          await authService.deleteAccount();
+                          // No se necesita navegar, AuthWrapper lo hará.
                         } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Error deleting account: $e')),
-                          );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error deleting account: $e')),
+                            );
+                          }
                         }
                       }
                     },
@@ -133,6 +136,7 @@ class SettingsView extends StatelessWidget {
             ),
 
             const SectionTitle('Help & Legal'),
+            // 🔧 CORRECCIÓN: Aquí estaba el error. He restaurado el `child` que faltaba.
             SettingsCard(
               child: Column(
                 children: [
@@ -155,12 +159,9 @@ class SettingsView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                onPressed: () async {
-                  await AuthService().signOut();
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const LoginPage()),
-                        (route) => false,
-                  );
+                onPressed: () {
+                  // Lógica de logout correcta y simplificada.
+                  authService.signOut();
                 },
                 child: const Text('Log Out', style: AppTextStyles.button),
               ),
@@ -172,6 +173,7 @@ class SettingsView extends StatelessWidget {
     );
   }
 
+  // 🔧 CORRECCIÓN: He restaurado también esta función de ayuda que se había omitido.
   Widget _themeOption(String label, {bool selected = false}) {
     return Container(
       margin: const EdgeInsets.only(left: 4),

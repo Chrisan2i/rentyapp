@@ -28,6 +28,7 @@ class RentalService {
         .doc(contract.contractId);
     return contractRef.set(contract.toMap());
   }
+
   Future<void> createRentalRequest({
     required RentalRequestModel request,
     required String renterName,    // Nombre del que solicita
@@ -35,26 +36,24 @@ class RentalService {
   }) async {
     try {
       // 1. Crea el documento de la solicitud de alquiler
-      // .add() crea el documento y devuelve una referencia a él.
       final docRef = await _db.collection('rentalRequests').add(request.toMap());
       final newRequestId = docRef.id;
 
-      // (Opcional pero recomendado) Actualiza el documento recién creado para que contenga su propio ID.
       await docRef.update({'requestId': newRequestId});
 
-
-      // 2. <<<--- LÓGICA PARA CREAR Y ENVIAR LA NOTIFICACIÓN ---<<<
-      // Prepara el modelo de la notificación.
+      // 2. <<<--- LÓGICA PARA CREAR Y ENVIAR LA NOTIFICACIÓN (CON TEXTOS TRADUCIDOS) ---<<<
       final notificationToSend = NotificationModel(
-        notificationId: '', // Firestore generará el ID automáticamente
+        notificationId: '',
         type: NotificationType.new_rental_request,
-        title: 'You have a new rental request!',
-        body: '$renterName wants to rent your product: "$productTitle".',
+        // TRADUCCIÓN: Título de la notificación
+        title: '¡Tienes una nueva solicitud de renta!',
+        // TRADUCCIÓN: Cuerpo de la notificación
+        body: '$renterName quiere rentar tu producto: "$productTitle".',
         createdAt: DateTime.now(),
         isRead: false,
         metadata: {
-          'type': 'rental_request', // Para saber qué pantalla abrir al tocar
-          'rentalRequestId': newRequestId, // ID para navegar a la solicitud específica
+          'type': 'rental_request',
+          'rentalRequestId': newRequestId,
           'productId': request.productId,
         },
       );
@@ -67,7 +66,7 @@ class RentalService {
 
     } catch (e) {
       debugPrint("❌ Error al crear la solicitud de alquiler y/o la notificación: $e");
-      rethrow; // Propaga el error para que la UI lo maneje.
+      rethrow;
     }
   }
 
@@ -98,23 +97,19 @@ class RentalService {
   /// Acepta una solicitud de alquiler. Esto actualiza la solicitud y crea un nuevo alquiler.
   Future<void> acceptRentalRequest(RentalRequestModel request) async {
     try {
-      // Usamos una transacción para asegurar que todas las operaciones se completen o ninguna.
       await _db.runTransaction((transaction) async {
-        // --- PASO 1: OBTENER REFERENCIAS Y DATOS ---
         final requestRef = _db.collection('rentalRequests').doc(request.requestId);
         final newRentalRef = _db.collection('rentals').doc();
 
-        // Obtenemos los documentos completos para enriquecer el RentalModel
         final ownerDoc = await transaction.get(_db.collection('users').doc(request.ownerId));
         final renterDoc = await transaction.get(_db.collection('users').doc(request.renterId));
         final productDoc = await transaction.get(_db.collection('products').doc(request.productId));
 
         if (!ownerDoc.exists || !renterDoc.exists || !productDoc.exists) {
+          // TRADUCCIÓN: Mensaje de error interno (visible en consola o si se propaga la excepción)
           throw Exception("No se encontró el dueño, arrendatario o producto.");
         }
 
-        // --- PASO 2: CONSTRUIR LOS DATOS DENORMALIZADOS ---
-        // Usamos nuestros modelos para parsear los datos de forma segura.
         final owner = UserModel.fromMap(ownerDoc.data()!, ownerDoc.id);
         final renter = UserModel.fromMap(renterDoc.data()!, renterDoc.id);
         final product = ProductModel.fromMap(productDoc.data()!, productDoc.id);
@@ -123,27 +118,22 @@ class RentalService {
         final renterInfo = {'userId': renter.userId, 'fullName': renter.fullName};
         final productInfo = {'productId': product.productId, 'title': product.title, 'imageUrl': product.images.first};
 
-        // --- PASO 3: CREAR EL NUEVO RENTALMODEL ---
         final newRental = RentalModel(
           rentalId: newRentalRef.id,
-          status: RentalStatus.awaiting_payment, // El estado inicial correcto
+          status: RentalStatus.awaiting_payment,
           productInfo: productInfo,
           ownerInfo: ownerInfo,
           renterInfo: renterInfo,
-          startDate: request.startDate, // Ya es DateTime
-          endDate: request.endDate, // Ya es DateTime
+          startDate: request.startDate,
+          endDate: request.endDate,
           financials: request.financials,
           reviewedByRenter: false,
           reviewedByOwner: false,
           createdAt: DateTime.now(),
-          involvedUsers: [owner.userId, renter.userId], // Clave para búsquedas eficientes
+          involvedUsers: [owner.userId, renter.userId],
         );
 
-        // --- PASO 4: EJECUTAR OPERACIONES DE ESCRITURA ---
-        // 4a. Actualiza la solicitud a 'accepted'
         transaction.update(requestRef, {'status': 'accepted', 'respondedAt': FieldValue.serverTimestamp()});
-
-        // 4b. Guarda el nuevo RentalModel en la colección 'rentals'
         transaction.set(newRentalRef, newRental.toMap());
       });
 
@@ -166,13 +156,9 @@ class RentalService {
     }
   }
 
-
-
-
   /// Obtiene todos los alquileres (como dueño o arrendatario) de un usuario.
   Future<List<RentalModel>> getRentalsForUser(String userId) async {
     try {
-      // Esta consulta es muy eficiente gracias al campo 'involvedUsers'
       final snapshot = await _db
           .collection('rentals')
           .where('involvedUsers', arrayContains: userId)
@@ -184,23 +170,16 @@ class RentalService {
           .toList();
     } catch (e) {
       debugPrint("❌ Error al obtener alquileres del usuario: $e");
-      return []; // Devuelve una lista vacía para no romper la UI.
+      return [];
     }
   }
+
   Future<void> confirmAndPayRental(String rentalId) async {
-    // 1. Muestra en consola que el proceso ha comenzado (útil para depuración).
     debugPrint('Procesando pago y confirmación para el alquiler: $rentalId...');
 
     try {
-      // 2. Obtiene la referencia directa al documento del alquiler en Firestore.
       final rentalDocRef = _db.collection('rentals').doc(rentalId);
 
-      // 3. Aquí es donde se realiza la lógica de pago real en un futuro (ej. con Stripe).
-      // Por ahora, asumimos que el pago es exitoso y procedemos a actualizar la base de datos.
-
-      // 4. <<<--- ESTA ES LA ACTUALIZACIÓN CLAVE ---<<<
-      // Se actualiza el campo 'status' del documento al nuevo estado.
-      // Usamos .name para guardar el valor del enum como un String ('awaiting_delivery').
       await rentalDocRef.update({
         'status': RentalStatus.awaiting_delivery.name,
       });
@@ -208,22 +187,22 @@ class RentalService {
       debugPrint('Éxito: El estado del alquiler $rentalId ha sido actualizado a awaiting_delivery.');
 
     } on FirebaseException catch (e) {
-      // 5. Captura errores específicos de Firebase (ej. permisos, no encontrado).
       debugPrint("Error de Firestore al actualizar el alquiler: ${e.message}");
-      // Re-lanza el error para que el controlador lo capture y muestre un mensaje al usuario.
+      // TRADUCCIÓN: Mensaje de error para el usuario
       throw Exception("No se pudo confirmar el alquiler. Por favor, intenta de nuevo.");
     } catch (e) {
-      // 6. Captura cualquier otro error inesperado.
       debugPrint("Error inesperado en confirmAndPayRental: ${e.toString()}");
+      // TRADUCCIÓN: Mensaje de error para el usuario
       throw Exception("Ocurrió un error inesperado. Por favor, intenta de nuevo.");
     }
   }
+
   Future<void> confirmDelivery(String rentalId) async {
     try {
       final rentalRef = _db.collection('rentals').doc(rentalId);
       await rentalRef.update({
         'status': RentalStatus.ongoing.name,
-        'deliveryConfirmedAt': FieldValue.serverTimestamp(), // Guarda la fecha de confirmación
+        'deliveryConfirmedAt': FieldValue.serverTimestamp(),
       });
       debugPrint('✅ Entrega confirmada para el alquiler: $rentalId');
     } catch (e) {
@@ -232,14 +211,12 @@ class RentalService {
     }
   }
 
-  /// El dueño confirma que ha recibido el producto de vuelta.
-  /// Cambia el estado de 'ongoing' a 'completed'.
   Future<void> completeRental(String rentalId) async {
     try {
       final rentalRef = _db.collection('rentals').doc(rentalId);
       await rentalRef.update({
         'status': RentalStatus.completed.name,
-        'returnConfirmedAt': FieldValue.serverTimestamp(), // Guarda la fecha de devolución
+        'returnConfirmedAt': FieldValue.serverTimestamp(),
       });
       debugPrint('✅ Alquiler completado: $rentalId');
     } catch (e) {

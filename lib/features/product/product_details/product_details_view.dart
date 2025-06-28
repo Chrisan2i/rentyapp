@@ -5,8 +5,6 @@ import 'package:rentyapp/features/product/models/product_model.dart';
 import 'package:rentyapp/features/auth/models/user_model.dart';
 import 'package:rentyapp/features/auth/services/auth_service.dart';
 import 'package:rentyapp/features/send_rental_request/send_rental_request_view.dart';
-
-// Importa todos los widgets que esta pantalla utiliza
 import 'widgets/customer_reviews_section.dart';
 import 'widgets/location_card.dart';
 import 'widgets/owner_info_card.dart';
@@ -138,7 +136,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     } else {
       // Si no se encontró (o hubo un error), muestra un mensaje.
       return const Text(
-        'Owner information is not available.',
+        'La informacion de el dueño no esta disponible.',
         style: TextStyle(color: AppColors.textSecondary),
       );
     }
@@ -175,7 +173,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         ),
         // Muestra un texto diferente si el usuario es el propietario.
         child: Text(
-          isOwner ? 'This is Your Product' : 'Rent Now',
+          isOwner ? 'Este es tu producto' : 'Rentar ahora',
           style: TextStyle(
             color: canRent ? AppColors.white : Colors.grey[400],
             fontSize: 16,
